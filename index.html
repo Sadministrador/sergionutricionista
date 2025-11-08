@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#000000">
+    <title>Sérgio,s Nutrição & Saúde</title>
+    <style>
+        /* ------------------------------------- */
+        /* SEÇÃO 1: CSS BASE */
+        /* ------------------------------------- */
+        :root {
+            --primary-color: #f40000;
+            --secondary-color: #1400ff;
+            --background-color: #000;
+            --text-color: #fff;
+            --input-bg-color: #1a1a1a;
+            --max-width: 800px;
+            font-size: 28px;
+        }
+        html { font-size: 169.5%; }
+        html, body { height: 100%; width: 100%; overflow-x: hidden; }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            margin: 0; padding: 0; padding-bottom: 7rem;
+            box-sizing: border-box; line-height: 1.6;
+        }
+        .main-container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 2rem;
+            box-sizing: border-box;
+            min-height: 100vh;
+        }
+        h1 { color: var(--text-color); text-align: center; line-height: 1.2; font-size: 3rem; margin-bottom: 2rem; }
+        h1 span { display: block; color: var(--text-color); font-size: 2rem; font-weight: bold; margin-bottom: 0.3rem; }
+        h2 { color: var(--primary-color); border-bottom: 2px solid rgba(244, 0, 0, 0.7); padding-bottom: 0.8rem; margin-top: 3.5rem; font-size: 2rem; }
+        #cadastroForm { display: grid; grid-template-columns: 1fr; gap: 1.8rem; }
+        input, select, button {
+            padding: 1.5rem; border-radius: 1rem; border: 3px solid var(--primary-color);
+            background: var(--input-bg-color); color: var(--text-color); margin: 0;
+            width: 100%; box-sizing: border-box; transition: all 0.3s; font-size: 1.5rem; min-height: 4rem;
+        }
+        input:focus, select:focus { border-color: var(--text-color); box-shadow: 0 0 12px var(--primary-color); background: #222; }
+        label { display: block; margin-top: 0.5rem; font-size: 1.6rem; font-weight: bold; }
+        .field-group { display: block; gap: 1.8rem; margin-bottom: 0; }
+        .field-group label { margin-top: 1.5rem; }
+        button {
+            background: var(--primary-color); color: var(--text-color); font-weight: 900; cursor: pointer;
+            margin-top: 2rem; border: none; font-size: 1.8rem; min-height: 5rem; letter-spacing: 0.5px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7); transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+        button:hover { background: #c40000; }
+        .active { background: var(--secondary-color) !important; border-color: var(--secondary-color) !important; }
+        .active:hover { background: #0000d4 !important; }
+        #analisarButton { background: var(--primary-color); }
+        #analisarButton:hover { background: #c40000; }
+        #loadUserButton { background: var(--primary-color); }
+        #loadUserButton:hover { background: #c40000; }
+        #controleSection button:last-child { background: var(--secondary-color); }
+        #controleSection button:last-child:hover { background: #0000d4; }
+        #resultadoSection button { background: var(--primary-color); color: var(--text-color); }
+        #resultadoSection button:hover { background: #c40000; }
+        #toggleCadastroButton { background: #333; border: 1px solid #555; color: var(--text-color); min-height: 4.5rem; font-size: 1.4rem; font-weight: normal; }
+        table { border-collapse: collapse; width: 100%; margin-top: 1.8rem; font-size: 1.3rem; }
+        #listaSection div[style*="overflow-x: auto"], #controleSection div[style*="overflow-x: auto"] { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        th, td { border: 2px solid var(--primary-color); padding: 1.4rem 1rem; text-align: center; font-size: 1.3rem; white-space: nowrap; }
+        th { background: var(--primary-color); color: var(--text-color); font-size: 1.4rem; }
+        tr.category-row td { background-color:#330000; font-weight:bold; color:var(--primary-color); }
+        .calories-total { margin-top: 2.5rem; font-weight:bold; padding: 2rem; border: 4px solid var(--primary-color); border-radius: 1.2rem; background: var(--input-bg-color); font-size: 1.8rem; line-height: 1.8; }
+        .hidden {display:none !important;}
+        #resultadoSection p { font-size: 1.5rem; padding: 0.7rem 0; }
+        #resultadoSection b { color: var(--primary-color); }
+        .food-item-container { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
+        .food-name-line { font-weight: bold; margin-bottom: 2px; text-align: left; }
+        .food-cal-line { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .calorias-base-unidade { color: #ffffff; font-size: 0.8em; font-weight: normal; }
+        .contador-quantidade { display: flex; align-items: center; justify-content: center; }
+        .contador-quantidade button { padding: 0.8rem; width: 40px; height: 40px; font-size: 2.0rem; line-height: 1; border-radius: 8px; border: 3px solid var(--primary-color); background-color: var(--input-bg-color); color: var(--text-color); transition: background-color 0.2s; margin: 0; margin-top: 0; min-height: 40px; }
+        .contador-quantidade button:hover { background-color: #333; }
+        .contador-quantidade .quantidade-input { width: 60px; padding: 0.5rem 0.1rem; text-align: center; font-size: 1.8rem; border-radius: 0; border-left: none; border-right: none; border-top: 3px solid var(--primary-color); border-bottom: 3px solid var(--primary-color); background: #1a1a1a; color: var(--text-color); box-shadow: none; min-height: 40px; }
+        .contador-quantidade .quantidade-input::-webkit-outer-spin-button,
+        .contador-quantidade .quantidade-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .contador-quantidade .quantidade-input { -moz-appearance: textfield; }
+        #foodTableBody td:nth-child(1) { text-align: left; }
+
+        /* ------------------------------------- */
+        /* SEÇÃO 2: CSS de Impressão */
+        /* ------------------------------------- */
+        @media print {
+            button, #cadastroSection, #userSelect, #loadUserButton, 
+            #categorySelect, .contador-quantidade, 
+            #controleSection h2:nth-of-type(1), #listaSection { 
+                display: none !important; 
+            }
+            @page { margin: 10mm; }
+
+            #resultadoSection {
+                position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 10mm;
+                box-sizing: border-box; font-size: 10pt; color: #000; background: #fff;
+            }
+            
+            h1, h2 { color: #000 !important; border-bottom: 1px solid #000 !important; font-size: 14pt; margin-top: 5pt; padding-bottom: 5pt; }
+            h1 span { font-size: 10pt; }
+            #resultadoSection p, .calories-total { font-size: 10pt; line-height: 1.2; padding: 2pt 0; color: #000; }
+            .calories-total { border: 2px solid #000; padding: 5pt; }
+        }
+
+        /* ------------------------------------- */
+        /* SEÇÃO 3: CSS do Relatório Diário */
+        /* ------------------------------------- */
+        .report-body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 30px; 
+            background: #000; 
+            color: #fff; 
+            min-height: 100vh;
+        }
+        .report-body h1 { 
+            font-size: 3rem; 
+            color: #f40000; 
+            text-align: center; 
+            margin-bottom: 3rem;
+            border-bottom: 4px solid #f40000;
+            padding-bottom: 1rem;
+        }
+        .report-body h2 {
+             font-size: 2.5rem; 
+             color: #fff; 
+             margin-top: 2rem; 
+             border-bottom: 2px solid #555; 
+             padding-bottom: 0.5rem;
+        }
+        .report-body p { 
+            font-size: 2rem; 
+            margin: 1rem 0; 
+            line-height: 1.5;
+        }
+        .report-body b { color: #1400ff; }
+        .report-body .cal-summary {
+            font-size: 3rem;
+            color: #f40000;
+            font-weight: bold;
+            margin-top: 3rem;
+            padding: 2rem;
+            border: 4px solid #f40000;
+            text-align: center;
+        }
+        .report-body ul {
+            list-style: none;
+            padding: 0;
+        }
+        .report-body ul li {
+            font-size: 2rem;
+            padding: 0.8rem 0;
+            border-bottom: 1px dotted #555; 
+        }
+    </style>
+    </head>
+<body>
+<div class="main-container">
+    <h1>
+        <span>Sérgio,s</span> Nutrição & Saúde
+    </h1>
+    
+    <div id="loginSection">
+        <h2>🔒 Acesso ao Sistema</h2>
+        <label for="senhaAcesso">Senha de Acesso 
+            <input type="password" id="senhaAcesso" placeholder="">
+        </label>
+        <button id="loginButton" onclick="fazerLogin()">Entrar</button>
+        <p id="loginMessage" style="color:var(--primary-color); font-weight: bold; margin-top: 1rem;" class="hidden"></p>
+    </div>
+    
+    <div id="cadastroSection" class="hidden">
+        <h2>1️⃣ Cadastro do Usuário</h2>
+        <button id="toggleCadastroButton" onclick="abrirAnalise(true)">Fechar Análise</button> 
+        <div id="cadastroForm">
+            <label>Nome: <input type="text" id="nome" placeholder="Seu nome" onchange="saveUserCadastro()"></label>
+            <label>Idade (anos): <input type="number" id="idade" placeholder="Anos" min="1" onchange="saveUserCadastro()"></label>
+            <label>Gênero: <select id="genero" onchange="saveUserCadastro()">
+                <option value="Feminino">Feminino</option>
+                <option value="Masculino">Masculino</option>
+            </select></label>
+            <label>Altura (cm): <input type="number" id="altura" placeholder="Ex: 170" onchange="saveUserCadastro()"></label>
+            <label>Peso atual (kg): <input type="number" id="peso" placeholder="Ex: 80" onchange="saveUserCadastro()"></label>
+            <label>Data de início da dieta: <input type="date" id="dataInicio" onchange="saveUserCadastro()"></label>
+            <label>Duração da Dieta: <select id="duracaoDieta" onchange="saveUserCadastro()">
+                <option value="3">3 Meses</option>
+                <option value="6" selected>6 Meses</option>
+            </select></label>
+            <label>Tipo de Dieta: <select id="tipoDieta" onchange="saveUserCadastro()">
+                <option value="Exata">Exata (foco na perda de peso)</option>
+                <option value="Balanceada">Balanceada (+30% Calorias)</option>
+            </select></label>
+            <label>Pratica exercícios diários? <select id="exercicio" onchange="saveUserCadastro()">
+                <option value="0">Não</option>
+                <option value="1">Sim</option>
+            </select></label>
+            <button id="analisarButton" onclick="analisar()">Analisar peso ideal</button>
+        </div>
+    </div>
+    
+    <div id="resultadoSection" class="hidden">
+        <h2>2️⃣ Resultado da Análise</h2>
+        <p>Nome: <b><span id="resNome"></span></b></p>
+        <p>Gênero: <b><span id="resGenero"></span></b></p>
+        <p>Peso atual: <b><span id="resPeso"></span> kg</b></p>
+        <p>Altura: <b><span id="resAltura"></span> cm</b></p>
+        <p>IMC atual: <b><span id="resIMC"></span></b></p>
+        <p>Peso ideal: <b><span id="resPesoIdeal"></span> kg</b></p>
+        <p>Kg a emagrecer: <b><span id="resKgEmagrecer"></span> kg</b></p>
+        <p>Data de início da dieta: <b><span id="resDataInicio"></span></b></p>
+        <p>Data final da dieta: <b><span id="resDataFim"></span></b></p>
+        <p>Duração da dieta: <b><span id="resDuracao"></span></b></p>
+        <p>Tipo de dieta: <b><span id="resTipoDieta"></span></b></p>
+        <p>Calorias por dia: <b><span id="resCalDia"></span> kcal</b></p>
+        <p>Calorias por mês: <b><span id="resCalMes"></span> kcal</b></p>
+        <p>Total calorias na dieta: <b><span id="resCalTotalDieta"></span> kcal</b></p>
+        <p>Calorias restantes para consumir neste mês: <b><span id="resFaltandoMes"></span> kcal</b></p>
+        <p>Calorias restantes para consumir na dieta: <b><span id="resFaltandoDieta"></span> kcal</b></p>
+        <button onclick="salvarNutri()">Salvar na lista do nutricionista</button>
+    </div>
+    
+    <div id="listaSection" class="hidden">
+        <h2>3️⃣ Lista do Nutricionista (Permite Rolagem Lateral)</h2>
+        <div style="overflow-x: auto;">
+            <table id="tabelaNutri">
+                <thead>
+                <tr>
+                    <th>Nome</th><th>Idade</th><th>Gênero</th><th>Altura (cm)</th><th>Peso Atual (kg)</th>
+                    <th>IMC</th><th>Peso Ideal (kg)</th><th>Kg a Emagrecer</th>
+                    <th>Cal/Dia</th><th>Cal/Mês</th><th>Total Dieta</th><th>Duração</th><th>Tipo</th><th>Exercício?</th><th>Data Início</th><th>Data Final</th>
+                </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="controleSection" class="hidden">
+        <h2>🍽️ Controle de Alimentos</h2>
+        <label for="userSelect">Selecionar usuário:</label>
+        <select id="userSelect" onchange="resetLoadButton()">
+            <option value="">Selecione um usuário</option>
+            </select>
+        <button id="loadUserButton" onclick="carregarUsuario()">Carregar Usuário</button>
+        <div class="field-group">
+            <label for="consumptionDate">Data do consumo:</label>
+            <input type="date" id="consumptionDate" onchange="carregarConsumoDoDia()">
+            <label for="caloriesLimit">Limite calórico dia:</label>
+            <input type="number" id="caloriesLimit" value="0" readonly>
+        </div>
+        <label for="categorySelect">Selecionar alimentos:</label>
+        <select id="categorySelect" onchange="gerarTabelaAlimentos()">
+            <option value="">Selecione uma categoria</option>
+            </select><br>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                <tr><th>Alimento</th><th>Porções</th><th>Total</th></tr>
+                </thead>
+                <tbody id="foodTableBody">
+                    <tr><td colspan="3">Selecione um usuário e uma categoria.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="calories-total">
+            Total consumido no dia: <span id="totalCalories">0</span> kcal<br>
+            Restante no mês: <span id="remainingCalories">0</span> kcal<br>
+            Restante na dieta: <span id="remainingTotalDieta">0</span> kcal
+        </div>
+        <button onclick="generateDailyReport()">Gerar relatório do dia (Baixar HTML)</button>
+    </div>
+</div>
+<script>
+// -------------------------------------
+// SEÇÃO 4: JAVASCRIPT
+// -------------------------------------
+const CALORIAS_POR_KG = 7700;
+const DIAS_NO_MES = 30;
+const USER_PREFIX = "userCadastro_";
+const DAILY_CONSUMPTION_PREFIX = "dailyConsumption_";
+// NOVOS ITENS PARA LOCALSTORAGE DE LOGIN
+const LOGIN_KEY = "loginData";
+let speaking = false;
+let currentUser = null;
+let dailyConsumption = {};
+
+// LISTA DE ALIMENTOS
+const foods = [
+    { category: "Grãos e cereais", name: "Arroz branco (1 colher de sopa)", cal: 70 },
+    { category: "Grãos e cereais", name: "Arroz integral (1 colher de sopa)", cal: 65 },
+    { category: "Grãos e cereais", name: "Feijão (1 concha média)", cal: 80 },
+    { category: "Grãos e cereais", name: "Macarrão instantâneo (1 pacote pequeno)", cal: 350 },
+    { category: "Grãos e cereais", name: "Macarrão normal (1 prato)", cal: 180 },
+    { category: "Grãos e cereais", name: "Ervilha (100g)", cal: 81 },
+    { category: "Grãos e cereais", name: "Batata comum (100g)", cal: 77 },
+    { category: "Grãos e cereais", name: "Polenta ou angu (100g)", cal: 100 },
+    { category: "Grãos e cereais", name: "Farinha de mandioca (1 colher de sopa)", cal: 35 },
+    { category: "Legumes", name: "Cenoura (100g)", cal: 40 },
+    { category: "Legumes", name: "Abobrinha (100g)", cal: 20 },
+    { category: "Legumes", name: "Quiabo (100g)", cal: 33 },
+    { category: "Legumes", name: "Batata-doce (100g)", cal: 86 },
+    { category: "Legumes", name: "Abóbora comum (100g)", cal: 26 },
+    { category: "Legumes", name: "Beterraba (100g)", cal: 43 },
+    { category: "Legumes", name: "Pepino (100g)", cal: 16 },
+    { category: "Legumes", name: "Pimentão (100g)", cal: 27 },
+    { category: "Legumes", name: "Tomate (100g)", cal: 18 },
+    { category: "Legumes", name: "Chuchu (100g)", cal: 19 },
+    { category: "Legumes", name: "Aspargos (100g)", cal: 20 },
+    { category: "Legumes", name: "Berinjela (100g)", cal: 25 },
+    { category: "Legumes", name: "Inhame (100g)", cal: 118 },
+    { category: "Legumes", name: "Aipim/Mandioca (100g)", cal: 130 },
+    { category: "Verduras", name: "Alface (100g)", cal: 15 },
+    { category: "Verduras", name: "Couve (100g)", cal: 32 },
+    { category: "Verduras", name: "Couve-flor (100g)", cal: 25 },
+    { category: "Verduras", name: "Espinafre (100g)", cal: 23 },
+    { category: "Verduras", name: "Rúcula (100g)", cal: 25 },
+    { category: "Verduras", name: "Repolho (100g)", cal: 25 },
+    { category: "Frutas", name: "Banana (100g)", cal: 89 },
+    { category: "Frutas", name: "Maçã (100g)", cal: 52 },
+    { category: "Frutas", name: "Laranja (100g)", cal: 43 },
+    { category: "Frutas", name: "Manga (100g)", cal: 60 },
+    { category: "Frutas", name: "Tangerina (100g)", cal: 53 },
+    { category: "Frutas", name: "Abacate (100g)", cal: 160 },
+    { category: "Frutas", name: "Morango (100g)", cal: 32 },
+    { category: "Frutas", name: "Uva vinho (100g)", cal: 69 },
+    { category: "Frutas", name: "Uva verde (100g)", cal: 69 },
+    { category: "Frutas", name: "Melancia (100g)", cal: 30 },
+    { category: "Frutas", name: "Melão (100g)", cal: 34 },
+    { category: "Frutas", name: "Azeitona (100g)", cal: 115 },
+    { category: "Frutas", name: "Limão (100g)", cal: 29 },
+    { category: "Frutas", name: "Abacaxi (100g)", cal: 50 },
+    { category: "Frutas", name: "Ameixa (100g)", cal: 46 },
+    { category: "Frutas", name: "Amora (100g)", cal: 43 },
+    { category: "Frutas", name: "Cereja (100g)", cal: 50 },
+    { category: "Frutas", name: "Coco (100g)", cal: 354 },
+    { category: "Frutas", name: "Figo (100g)", cal: 74 },
+    { category: "Frutas", name: "Mamão (100g)", cal: 43 },
+    { category: "Frutas", name: "Maracujá (100g)", cal: 97 },
+    { category: "Frutas", name: "Pêra (100g)", cal: 57 },
+    { category: "Frutas", name: "Pêssego (100g)", cal: 39 },
+    { category: "Frutas", name: "Acerola (100g)", cal: 32 },
+    { category: "Frutas", name: "Caju (100g)", cal: 43 },
+    { category: "Frutas", name: "Jaca (100g)", cal: 95 },
+    { category: "Frutas", name: "Goiaba (100g)", cal: 68 },
+    { category: "Bebidas", name: "Refrigerante (200ml)", cal: 90 },
+    { category: "Bebidas", name: "Cerveja (350ml)", cal: 150 },
+    { category: "Bebidas", name: "Leite Ninho achocolatado (200ml)", cal: 160 },
+    { category: "Bebidas", name: "Leite Ninho puro (200ml)", cal: 130 },
+    { category: "Bebidas", name: "Água com gás (200ml)", cal: 0 },
+    { category: "Bebidas", name: "Vitamina (200ml)", cal: 180 },
+    { category: "Bebidas", name: "Farinha Láctea com leite (200ml)", cal: 160 },
+    { category: "Bebidas", name: "Nestlé Nesquik com leite (200ml)", cal: 160 },
+    { category: "Bebidas", name: "Suco de laranja (200ml)", cal: 90 },
+    { category: "Bebidas", name: "Chá sem açúcar (200ml)", cal: 2 },  
+{ category: "Bebidas", name: "Café com açúcar (200ml)", cal: 40 },
+{ category: "Bebidas", name: "Café sem açúcar (200ml)", cal: 2 },
+{ category: "Bebidas", name: "Café com adoçante (200ml)", cal: 2 },
+    { category: "Bebidas", name: "Chá com açúcar (200ml)", cal: 20 },
+    { category: "Bebidas", name: "Energético (250ml)", cal: 110 },
+    { category: "Bebidas", name: "Limonada (200ml)", cal: 40 },
+    { category: "Bebidas", name: "Champanhe (150ml)", cal: 90 },
+    { category: "Bebidas", name: "Suco de caixa (200ml)", cal: 100 },
+{ category: "Bebidas", name: "Leite de caixa integral (200ml)", cal: 120 },
+{ category: "Bebidas", name: "Leite de caixa desnatado (200ml)", cal: 70 },
+    { category: "Frios", name: "Apresuntado (30g)", cal: 45 },
+    { category: "Frios", name: "Mortadela (30g)", cal: 90 },
+    { category: "Frios", name: "Mussarela (30g)", cal: 80 },
+    { category: "Frios", name: "Peito de peru (30g)", cal: 30 },
+    { category: "Frios", name: "Presunto (30g)", cal: 45 },
+    { category: "Frios", name: "Queijo Minas (30g)", cal: 90 },
+    { category: "Frios", name: "Queijo prato (30g)", cal: 110 },
+    { category: "Frios", name: "Salame (30g)", cal: 120 },
+    { category: "Frios", name: "Salsichão (30g)", cal: 85 },
+    { category: "Frios", name: "Salsicha (30g)", cal: 90 },
+    { category: "Frios", name: "Sardinha enlatada (100g)", cal: 200 },
+    { category: "Frios", name: "Salsicha enlatada (100g)", cal: 250 },
+    { category: "Frios", name: "Atum enlatado (100g)", cal: 120 },
+    { category: "Carnes e ovos", name: "Frango empanado (100g)", cal: 250 },
+    { category: "Carnes e ovos", name: "Filé de frango (100g)", cal: 165 },
+    { category: "Carnes e ovos", name: "Bife (100g)", cal: 250 },
+    { category: "Carnes e ovos", name: "Carne vermelha (100g)", cal: 290 },
+    { category: "Carnes e ovos", name: "Fígado de boi (100g)", cal: 135 },
+    { category: "Carnes e ovos", name: "Fígado de galinha (100g)", cal: 135 },
+    { category: "Carnes e ovos", name: "Linguiça (100g)", cal: 300 },
+    { category: "Carnes e ovos", name: "Muela (100g)", cal: 125 },
+    { category: "Carnes e ovos", name: "Peixe (100g)", cal: 160 },
+    { category: "Carnes e ovos", name: "Carne de porco (100g)", cal: 240 },
+    { category: "Carnes e ovos", name: "Torresmo (100g)", cal: 550 },
+    { category: "Carnes e ovos", name: "Carré (100g)", cal: 220 },
+    { category: "Carnes e ovos", name: "Almôndega (100g)", cal: 250 },
+{ category: "Carnes e ovos", name: "Nuggets (100g)", cal: 280 },
+    { category: "Doces", name: "Bolo normal (1 fatia média)", cal: 250 },
+    { category: "Doces", name: "Bolo confeitado (1 fatia média)", cal: 350 },
+    { category: "Doces", name: "Pudim (1 fatia média)", cal: 220 },
+    { category: "Doces", name: "Mousse (1 porção média)", cal: 180 },
+    { category: "Doces", name: "Doce de abóbora (100g)", cal: 150 },
+    { category: "Doces", name: "Goiabada (100g)", cal: 260 },
+    { category: "Doces", name: "Doce de amendoim (100g)", cal: 280 },
+    { category: "Doces", name: "Cocada (100g)", cal: 300 },
+    { category: "Doces", name: "Maria mole (100g)", cal: 250 },
+    { category: "Doces", name: "Balas (1 unidade)", cal: 15 },
+    { category: "Doces", name: "Pipoca salgada (1 porção média)", cal: 120 },
+    { category: "Doces", name: "Pipoca doce (1 porção média)", cal: 130 },
+    { category: "Doces", name: "Kindin (1 unidade)", cal: 150 },
+    { category: "Doces", name: "Sorvete (100g)", cal: 200 },
+    { category: "Doces", name: "Pudim de pão (100g)", cal: 180 },
+    { category: "Doces", name: "Doce de leite (100g)", cal: 300 },
+    { category: "Doces", name: "Churros (1 unidade)", cal: 250 },
+    { category: "Doces", name: "Suspiro (100g)", cal: 380 },
+    { category: "Doces", name: "Brigadeiro (1 unidade)", cal: 80 },
+    { category: "Doces", name: "Pé de moleque (1 unidade)", cal: 150 },
+    { category: "Doces", name: "Pamonha (1 unidade)", cal: 250 },
+    { category: "Doces", name: "Torta de maçã (1 fatia)", cal: 280 },
+    { category: "Doces", name: "Gelatina (100g)", cal: 60 },
+    { category: "Doces", name: "Açúcar mascavo (1 colher de sopa)", cal: 50 },
+    { category: "Chocolates", name: "Barra de chocolate ao leite (100g)", cal: 535 },
+    { category: "Chocolates", name: "Bombom (1 unidade)", cal: 100 },
+    { category: "Chocolates", name: "Chocolate em pó (1 colher de sopa)", cal: 25 },
+    { category: "Chocolates", name: "Achocolatado em pó (1 colher de sopa)", cal: 40 },
+    { category: "Chocolates", name: "Chocolate amargo (100g)", cal: 600 },
+    { category: "Pães e Massas", name: "Pão Francês (50g)", cal: 150 },
+    { category: "Pães e Massas", name: "Pão Integral (50g)", cal: 120 },
+    { category: "Pães e Massas", name: "Pão de Forma (1 fatia)", cal: 70 },
+    { category: "Pães e Massas", name: "Biscoito água e sal (3 unidades)", cal: 60 },
+    { category: "Pães e Massas", name: "Torrada simples (1 unidade)", cal: 30 },
+    { category: "Pães e Massas", name: "Bolo simples (1 fatia)", cal: 200 },
+    { category: "Pães e Massas", name: "Pizza mussarela (1 fatia)", cal: 280 },
+    { category: "Pães e Massas", name: "Lasanha (1 porção média)", cal: 400 },
+    { category: "Pães e Massas", name: "Massa de pastel (100g)", cal: 300 },
+    { category: "Pães e Massas", name: "Pão de queijo (1 unidade média)", cal: 100 },
+    { category: "Pães e Massas", name: "Croissant (1 unidade)", cal: 250 },
+    { category: "Pães e Massas", name: "Tapioca (1 unidade)", cal: 150 },
+    { category: "Pães e Massas", name: "Crepe (1 unidade)", cal: 200 },
+    { category: "Azeites e Óleos", name: "Azeite de oliva (1 colher de sopa)", cal: 120 },
+    { category: "Azeites e Óleos", name: "Manteiga (1 colher de sopa)", cal: 100 },
+    { category: "Azeites e Óleos", name: "Maionese (1 colher de sopa)", cal: 90 },
+    { category: "Azeites e Óleos", name: "Óleo de coco (1 colher de sopa)", cal: 120 },
+    { category: "Azeites e Óleos", name: "Creme de leite (1 colher de sopa)", cal: 50 },
+    { category: "Azeites e Óleos", name: "Requeijão (1 colher de sopa)", cal: 70 },
+    { category: "Azeites e Óleos", name: "Queijo cottage (1 colher de sopa)", cal: 30 },
+    { category: "Lanches Rápido", name: "Hambúrguer (simples)", cal: 300 },
+    { category: "Lanches Rápido", name: "Batata frita (porção média)", cal: 350 },
+    { category: "Lanches Rápido", name: "Sanduíche natural", cal: 250 },
+    { category: "Lanches Rápido", name: "Salgado frito (coxinha, risole)", cal: 300 },
+    { category: "Lanches Rápido", name: "Salgado assado (esfiha, empada)", cal: 220 },
+    { category: "Lanches Rápido", name: "Hot dog simples", cal: 350 },
+    { category: "Lanches Rápido", name: "Açaí (200ml)", cal: 200 },
+    { category: "Lanches Rápido", name: "Pizza Mussarela (1 fatia)", cal: 280 },
+    { category: "Lanches Rápido", name: "Cheeseburger Completo", cal: 450 },
+    { category: "Lanches Rápido", name: "X-Tudo (Hamburguer completo)", cal: 650 },
+    { category: "Lanches Rápido", name: "Misto Quente", cal: 220 },
+    { category: "Lanches Rápido", name: "Pastel Frito (queijo/carne)", cal: 320 },
+    { category: "Lanches Rápido", name: "Sushi (6 peças)", cal: 200 },
+    { category: "Lanches Rápido", name: "Temaki (salmão/atum)", cal: 350 },
+    { category: "Lanches Rápido", name: "Wrap de Frango", cal: 380 }
+];
+const allFoodsMap = new Map(foods.map(f => [f.name, f]));
+
+// ===============================================
+// INÍCIO DAS FUNÇÕES DE LOGIN/EXPIRAÇÃO
+// ===============================================
+
+/**
+ * Calcula a data de expiração com base na duração da dieta.
+ * @param {number} meses - Duração da dieta em meses (3 ou 6).
+ * @returns {number} Timestamp (milissegundos) da data de expiração.
+ */
+function calculateExpirationTime(meses) {
+    const today = new Date();
+    // Adiciona o número de meses ao mês atual
+    today.setMonth(today.getMonth() + meses);
+    return today.getTime();
+}
+
+/**
+ * Tenta carregar os dados de login salvos.
+ * @returns {object | null} Dados de login ou null se não houver ou estiver expirado.
+ */
+function getLoginData() {
+    try {
+        const data = JSON.parse(localStorage.getItem(LOGIN_KEY));
+        if (data && data.expirationTime && new Date().getTime() < data.expirationTime) {
+            return data;
+        }
+        // Se a data expirar, remove os dados salvos para forçar novo login
+        localStorage.removeItem(LOGIN_KEY);
+        return null;
+    } catch (e) {
+        console.error("Erro ao carregar dados de login:", e);
+        localStorage.removeItem(LOGIN_KEY);
+        return null;
+    }
+}
+
+/**
+ * Salva a senha e o tempo de expiração no localStorage.
+ * O tempo de expiração será o mesmo da duração da dieta (3 ou 6 meses).
+ * @param {string} senha - A senha de acesso.
+ * @param {number} duracaoMeses - Duração da dieta em meses (3 ou 6).
+ */
+function saveLoginData(senha, duracaoMeses) {
+    const expirationTime = calculateExpirationTime(duracaoMeses);
+    const loginData = {
+        senha: senha,
+        loggedIn: true,
+        expirationTime: expirationTime,
+        duracaoMeses: duracaoMeses
+    };
+    try {
+        localStorage.setItem(LOGIN_KEY, JSON.stringify(loginData));
+    } catch (e) {
+        console.error("Erro ao salvar dados de login:", e);
+    }
+}
+
+/**
+ * Verifica o estado de login ao carregar a página.
+ * Se houver login válido, oculta o campo de senha e mostra o app.
+ */
+function checkLoginState() {
+    const loginData = getLoginData();
+    const loginSection = document.getElementById("loginSection");
+    const cadastroSection = document.getElementById("cadastroSection");
+    const senhaAcessoInput = document.getElementById("senhaAcesso");
+    const loginButton = document.getElementById("loginButton");
+    const loginLabel = document.querySelector('label[for="senhaAcesso"]');
+
+    // Sempre esconde o conteúdo do app ao iniciar (exceto login)
+    cadastroSection.classList.add("hidden");
+    document.getElementById("resultadoSection").classList.add("hidden");
+    document.getElementById("listaSection").classList.add("hidden");
+    document.getElementById("controleSection").classList.add("hidden");
+
+    if (loginData && loginData.loggedIn) {
+        // Login válido: Oculta a seção de login (mas mantém o h2)
+        loginSection.classList.remove("hidden"); // Mantém a seção para mostrar a mensagem
+        
+        // Oculta o campo de senha e o botão "Entrar"
+        senhaAcessoInput.classList.add('hidden');
+        loginButton.classList.add('hidden');
+        if (loginLabel) loginLabel.classList.add('hidden');
+
+        // Preenche o campo de senha com a senha salva (para usos internos se necessário)
+        senhaAcessoInput.value = loginData.senha;
+        
+        // Mostra a mensagem de login automático
+        const loginMessage = document.getElementById("loginMessage");
+        const expirationDate = new Date(loginData.expirationTime).toLocaleDateString('pt-BR');
+        loginMessage.textContent = `Acesso automático: Senha salva por ${loginData.duracaoMeses} meses. Expira em ${expirationDate}.`;
+        loginMessage.classList.remove("hidden");
+
+        // Mostra o conteúdo do app
+        cadastroSection.classList.remove("hidden");
+        document.getElementById("controleSection").classList.remove("hidden");
+
+    } else {
+        // Login inválido ou expirado: Mostra o campo de senha
+        loginSection.classList.remove("hidden");
+        senhaAcessoInput.classList.remove('hidden');
+        loginButton.classList.remove('hidden');
+        if (loginLabel) loginLabel.classList.remove('hidden');
+        document.getElementById("loginMessage").classList.add("hidden");
+    }
+}
+
+/**
+ * Função de Login: Adiciona lógica para salvar a senha no localStorage APENAS
+ * se o login for bem-sucedido.
+ */
+function fazerLogin() {
+    const senhaInput = document.getElementById("senhaAcesso");
+    const senha = senhaInput.value;
+    const loginMessage = document.getElementById("loginMessage");
+    const cadastroSection = document.getElementById("cadastroSection");
+
+    // Regex da senha: /^[1-9]{3}[a-zA-Z]{3}0{6}o{3}.{2}$/
+    const regex = /^[1-9]{3}[a-zA-Z]{3}0{6}o{3}.{2}$/;
+
+    if (regex.test(senha)) {
+        loginMessage.textContent = "Login bem-sucedido! Ocultando campo de senha.";
+        loginMessage.classList.remove("hidden");
+
+        // Salva a senha com a duração inicial da dieta
+        const duracaoInicial = Number(document.getElementById("duracaoDieta").value) || 6;
+        saveLoginData(senha, duracaoInicial);
+
+        // Oculta o campo de senha e mostra o app
+        checkLoginState();
+        
+    } else {
+        loginMessage.textContent = "Senha incorreta. O padrão é: [3 dígitos 1-9][3 letras a-Z][6 zeros][3 'o'][2 caracteres qualquer].";
+        loginMessage.classList.remove("hidden");
+        senhaInput.value = '';
+        senhaInput.focus();
+        cadastroSection.classList.add("hidden");
+    }
+}
+// ===============================================
+// FIM DAS FUNÇÕES DE LOGIN/EXPIRAÇÃO
+// ===============================================
+
+// Funções utilitárias e de interface (Mantidas e revisadas para integração)
+function splitFoodName(name, cal) {
+    const match = name.match(/^(.*?)(\s*\((.*?)\))?$/);
+    let foodName = name;
+    let portion = '';
+    if (match) {
+        foodName = match[1].trim();
+        portion = match[3] ? match[3].trim() : '';
+    }
+    let portionLine = '';
+    if (portion) { portionLine = portion + ' '; }
+    portionLine += cal + ' kcal';
+    return { foodName, portionLine };
+}
+function formatDateToBR(dateString) {
+    if (!dateString) return '';
+    try {
+        const [year, month, day] = dateString.split('-');
+        if (!day || !month || !year) return dateString;
+        return `${day}/${month}/${year}`;
+    } catch (e) { return dateString; }
+}
+function getDuracaoText(value) {
+    const select = document.getElementById("duracaoDieta");
+    if (select) {
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === value.toString()) {
+                return select.options[i].text;
+            }
+        }
+    }
+    return `${value} meses`;
+}
+function calcularDataFim(dataInicio, meses) {
+    if (!dataInicio || !meses) return "";
+    const data = new Date(dataInicio + 'T00:00:00'); 
+    data.setMonth(data.getMonth() + Number(meses));
+    data.setDate(data.getDate() - 1); 
+    const day = String(data.getDate()).padStart(2, '0');
+    const month = String(data.getMonth() + 1).padStart(2, '0');
+    const year = data.getFullYear();
+    return `${year}-${month}-${day}`;
+}
+function resetLoadButton() {
+    const loadButton = document.getElementById("loadUserButton");
+    loadButton.textContent = "Carregar Usuário";
+    loadButton.classList.remove("active");
+    gerarTabelaAlimentos();
+}
+function resetAnalisarButton() {
+    const analisarButton = document.getElementById("analisarButton");
+    analisarButton.textContent = "Analisar peso ideal";
+    analisarButton.classList.remove("active");
+}
+function saveUserCadastro() {
+    const nome = document.getElementById("nome").value.trim();
+    if (!nome) { return; }
+    const duracaoDieta = document.getElementById("duracaoDieta").value || "6"; 
+    const userCadastro = {
+        nome: nome,
+        idade: document.getElementById("idade").value || "",
+        genero: document.getElementById("genero").value || "Feminino",
+        altura: document.getElementById("altura").value || "",
+        peso: document.getElementById("peso").value || "",
+        dataInicio: document.getElementById("dataInicio").value || "",
+        duracaoDieta: duracaoDieta, 
+        tipoDieta: document.getElementById("tipoDieta").value || "Exata",
+        exercicio: document.getElementById("exercicio").value || "0"
+    };
+    try { localStorage.setItem(`${USER_PREFIX}${nome}`, JSON.stringify(userCadastro)); } catch (e) { console.error("Erro ao salvar cadastro", e); }
+    resetAnalisarButton();
+    mostrarLista(nome);
+
+    // Atualiza o tempo de expiração do login ao salvar o cadastro
+    const loginData = getLoginData();
+    if (loginData) {
+        const senhaSalva = document.getElementById("senhaAcesso").value; 
+        saveLoginData(senhaSalva, Number(duracaoDieta));
+        checkLoginState(); // Atualiza a mensagem de expiração
+    }
+}
+function loadUserCadastro(nome) {
+    if (!nome) return;
+    try {
+        const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
+        document.getElementById("nome").value = userCadastro.nome || "";
+        document.getElementById("idade").value = userCadastro.idade || "";
+        document.getElementById("genero").value = userCadastro.genero || "Feminino";
+        document.getElementById("altura").value = userCadastro.altura || "";
+        document.getElementById("peso").value = userCadastro.peso || "";
+        document.getElementById("dataInicio").value = userCadastro.dataInicio || "";
+        document.getElementById("duracaoDieta").value = userCadastro.duracaoDieta || "6";
+        document.getElementById("tipoDieta").value = userCadastro.tipoDieta || "Exata";
+        document.getElementById("exercicio").value = userCadastro.exercicio || "0";
+    } catch (e) { console.error("Erro ao carregar cadastro", e); }
+    analisar();
+    document.getElementById("toggleCadastroButton").textContent = "Fechar Análise";
+    document.getElementById("analisarButton").textContent = "Análise Atualizada";
+    document.getElementById("analisarButton").classList.add("active");
+}
+function mostrarLista(nomeParaSelecionar = '') {
+    const tabelaBody = document.querySelector("#tabelaNutri tbody");
+    tabelaBody.innerHTML = '';
+    const users = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(USER_PREFIX)) {
+            const user = JSON.parse(localStorage.getItem(key));
+            users.push(user);
+        }
+    }
+    
+    users.sort((a, b) => a.nome.localeCompare(b.nome));
+
+    users.forEach(user => {
+        const tr = document.createElement("tr");
+        const { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta } = calcularResultados(user);
+        const dataFim = calcularDataFim(user.dataInicio, user.duracaoDieta);
+
+        tr.innerHTML = `
+            <td>${user.nome}</td>
+            <td>${user.idade}</td>
+            <td>${user.genero}</td>
+            <td>${user.altura}</td>
+            <td>${user.peso}</td>
+            <td>${imc.toFixed(2)}</td>
+            <td>${pesoIdeal.toFixed(2)}</td>
+            <td>${kgEmagrecer.toFixed(2)}</td>
+            <td>${calDia.toFixed(0)}</td>
+            <td>${calMes.toFixed(0)}</td>
+            <td>${calTotalDieta.toFixed(0)}</td>
+            <td>${getDuracaoText(user.duracaoDieta)}</td>
+            <td>${user.tipoDieta}</td>
+            <td>${user.exercicio == "1" ? "Sim" : "Não"}</td>
+            <td>${formatDateToBR(user.dataInicio)}</td>
+            <td>${formatDateToBR(dataFim)}</td>
+        `;
+        tr.onclick = () => {
+            loadUserCadastro(user.nome);
+            document.querySelector('.main-container').scrollTop = 0;
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        };
+        tabelaBody.appendChild(tr);
+    });
+    
+    // Atualiza o select de usuários
+    const userSelect = document.getElementById("userSelect");
+    userSelect.innerHTML = '<option value="">Selecione um usuário</option>';
+    users.forEach(user => {
+        const option = document.createElement("option");
+        option.value = user.nome;
+        option.textContent = user.nome;
+        userSelect.appendChild(option);
+        if (user.nome === nomeParaSelecionar) {
+            userSelect.value = nomeParaSelecionar;
+        }
+    });
+
+    if (getLoginData()) {
+        document.getElementById("listaSection").classList.remove("hidden");
+    }
+}
+function calcularResultados(user) {
+    const { idade, genero, altura, peso, duracaoDieta, tipoDieta, exercicio } = user;
+    const alturaM = Number(altura) / 100;
+    const pesoN = Number(peso);
+    const duracaoMeses = Number(duracaoDieta);
+    const exercicioN = Number(exercicio);
+
+    if (!alturaM || !pesoN || !duracaoMeses || !idade) {
+        return { imc: 0, pesoIdeal: 0, kgEmagrecer: 0, calDia: 0, calMes: 0, calTotalDieta: 0 };
+    }
+
+    const imc = pesoN / (alturaM * alturaM);
+
+    // Peso ideal (Fórmula de Lorentz)
+    let pesoIdeal;
+    if (genero === "Masculino") {
+        pesoIdeal = alturaM * 100 - 100 - ((alturaM * 100 - 150) / 4);
+    } else { // Feminino
+        pesoIdeal = alturaM * 100 - 100 - ((alturaM * 100 - 150) / 2);
+    }
+
+    const kgEmagrecer = pesoN - pesoIdeal;
+
+    // TMB (Taxa Metabólica Basal) - Harris-Benedict (simplificada)
+    let tmb;
+    if (genero === "Masculino") {
+        tmb = 66 + (13.7 * pesoN) + (5 * (alturaM * 100)) - (6.8 * Number(idade));
+    } else { // Feminino
+        tmb = 655 + (9.6 * pesoN) + (1.8 * (alturaM * 100)) - (4.7 * Number(idade));
+    }
+
+    // Nível de atividade (sedentário a moderado)
+    const fatorAtividade = exercicioN === 1 ? 1.55 : 1.2;
+    const caloriasManutencao = tmb * fatorAtividade;
+
+    // Calorias a cortar para atingir o objetivo
+    const semanas = duracaoMeses * 4;
+    const corteCaloricoTotal = kgEmagrecer * CALORIAS_POR_KG;
+    const corteCaloricoDiarioNecessario = corteCaloricoTotal / (semanas * 7);
+
+    let calDiaBase = caloriasManutencao - corteCaloricoDiarioNecessario;
+
+    // Ajuste pelo Tipo de Dieta
+    if (tipoDieta === "Balanceada") {
+        calDiaBase *= 1.30; 
+    }
+    // Garante um mínimo razoável
+    if (calDiaBase < 1000) calDiaBase = 1000;
+
+    const calDia = calDiaBase;
+    const calMes = calDia * DIAS_NO_MES;
+    const calTotalDieta = calDia * duracaoMeses * DIAS_NO_MES;
+
+    return { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta };
+}
+function analisar() {
+    const nome = document.getElementById("nome").value.trim();
+    const idade = document.getElementById("idade").value;
+    const altura = document.getElementById("altura").value;
+    const peso = document.getElementById("peso").value;
+    const dataInicio = document.getElementById("dataInicio").value;
+
+    if (!nome || !idade || !altura || !peso || !dataInicio) {
+        alert("Preencha todos os campos do cadastro para analisar.");
+        return;
+    }
+
+    const user = {
+        nome: nome,
+        idade: idade,
+        genero: document.getElementById("genero").value,
+        altura: altura,
+        peso: peso,
+        dataInicio: dataInicio,
+        duracaoDieta: document.getElementById("duracaoDieta").value,
+        tipoDieta: document.getElementById("tipoDieta").value,
+        exercicio: document.getElementById("exercicio").value
+    };
+
+    const { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta } = calcularResultados(user);
+    const duracaoDieta = user.duracaoDieta;
+    const dataFim = calcularDataFim(dataInicio, duracaoDieta);
+    const dataFimBR = formatDateToBR(dataFim);
+
+    const { consumedMes, consumedDieta } = getConsumedTotals(nome, user);
+    const faltamMes = calMes - consumedMes;
+    const faltamDieta = calTotalDieta - consumedDieta;
+    
+
+    // Exibir resultados
+    document.getElementById("resNome").textContent = nome;
+    document.getElementById("resGenero").textContent = user.genero;
+    document.getElementById("resPeso").textContent = Number(peso).toFixed(1);
+    document.getElementById("resAltura").textContent = altura;
+    document.getElementById("resIMC").textContent = imc.toFixed(2);
+    document.getElementById("resPesoIdeal").textContent = pesoIdeal.toFixed(1);
+    document.getElementById("resKgEmagrecer").textContent = kgEmagrecer > 0 ? kgEmagrecer.toFixed(1) : "0.0";
+    document.getElementById("resDataInicio").textContent = formatDateToBR(dataInicio);
+    document.getElementById("resDataFim").textContent = dataFimBR;
+    document.getElementById("resDuracao").textContent = getDuracaoText(duracaoDieta);
+    document.getElementById("resTipoDieta").textContent = user.tipoDieta;
+    document.getElementById("resCalDia").textContent = calDia.toFixed(0);
+    document.getElementById("resCalMes").textContent = calMes.toFixed(0);
+    document.getElementById("resCalTotalDieta").textContent = calTotalDieta.toFixed(0);
+    document.getElementById("resFaltandoMes").textContent = faltamMes.toFixed(0);
+    document.getElementById("resFaltandoDieta").textContent = faltamDieta.toFixed(0);
+
+    document.getElementById("resultadoSection").classList.remove("hidden");
+    document.getElementById("controleSection").classList.remove("hidden");
+    
+    document.getElementById("analisarButton").textContent = "Análise Atualizada";
+    document.getElementById("analisarButton").classList.add("active");
+
+    // Salva o cadastro (e atualiza a duração do login)
+    saveUserCadastro();
+
+    // Carrega o usuário na seção de controle e a data de hoje
+    carregarUsuarioControle(nome, calDia);
+}
+function salvarNutri() {
+    alert("Informações de " + document.getElementById("resNome").textContent + " salvas com sucesso na lista do nutricionista!");
+    document.getElementById("analisarButton").textContent = "Analisar peso ideal";
+    document.getElementById("analisarButton").classList.remove("active");
+    mostrarLista(document.getElementById("resNome").textContent);
+}
+function carregarUsuario() {
+    const select = document.getElementById("userSelect");
+    const nome = select.value;
+    if (!nome) {
+        alert("Selecione um usuário para carregar o controle.");
+        return;
+    }
+    
+    try {
+        const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
+        if (!userCadastro.nome) throw new Error("Cadastro não encontrado.");
+        
+        const { calDia } = calcularResultados(userCadastro);
+        carregarUsuarioControle(nome, calDia);
+
+    } catch(e) {
+        alert("Erro ao carregar dados de cálculo do usuário. Verifique o cadastro.");
+        console.error(e);
+    }
+}
+function carregarUsuarioControle(nome, calDia) {
+    currentUser = nome;
+    document.getElementById("loadUserButton").textContent = `Usuário: ${nome}`;
+    document.getElementById("loadUserButton").classList.add("active");
+    
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("consumptionDate").value = today;
+    document.getElementById("caloriesLimit").value = calDia.toFixed(0);
+    
+    carregarConsumoDoDia();
+    
+    if (document.getElementById("categorySelect").options.length <= 1) {
+        const categories = [...new Set(foods.map(f => f.category))].sort();
+        const categorySelect = document.getElementById("categorySelect");
+        categories.forEach(category => {
+            const option = document.createElement("option");
+            option.value = category;
+            option.textContent = category;
+            categorySelect.appendChild(option);
+        });
+    }
+    
+    gerarTabelaAlimentos();
+}
+function carregarConsumoDoDia() {
+    if (!currentUser) return;
+    const date = document.getElementById("consumptionDate").value;
+    if (!date) {
+        dailyConsumption = {};
+        updateDailyTotal();
+        return;
+    }
+    
+    try {
+        const key = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${date}`;
+        dailyConsumption = JSON.parse(localStorage.getItem(key) || "{}");
+    } catch (e) {
+        console.error("Erro ao carregar consumo diário", e);
+        dailyConsumption = {};
+    }
+    
+    gerarTabelaAlimentos();
+    updateDailyTotal();
+}
+function saveConsumoDoDia() {
+    if (!currentUser) return;
+    const date = document.getElementById("consumptionDate").value;
+    if (!date) return;
+    
+    const key = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${date}`;
+    try {
+        const toSave = {};
+        for (const [food, quantity] of Object.entries(dailyConsumption)) {
+            if (quantity > 0) {
+                toSave[food] = quantity;
+            }
+        }
+        if (Object.keys(toSave).length > 0) {
+            localStorage.setItem(key, JSON.stringify(toSave));
+        } else {
+            localStorage.removeItem(key); 
+        }
+    } catch (e) {
+        console.error("Erro ao salvar consumo diário", e);
+    }
+    updateDailyTotal();
+}
+function updateQuantity(foodName, delta) {
+    const currentQuantity = dailyConsumption[foodName] || 0;
+    let newQuantity = currentQuantity + delta;
+    
+    if (newQuantity < 0) newQuantity = 0;
+    
+    dailyConsumption[foodName] = newQuantity;
+    
+    const inputId = `qty_${foodName.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const inputElement = document.getElementById(inputId);
+    if (inputElement) {
+        inputElement.value = newQuantity;
+    }
+    
+    saveConsumoDoDia();
+    gerarTabelaAlimentos(); 
+}
+function gerarTabelaAlimentos() {
+    const category = document.getElementById("categorySelect").value;
+    const tabelaBody = document.getElementById("foodTableBody");
+    tabelaBody.innerHTML = '';
+    
+    if (!currentUser) {
+        tabelaBody.innerHTML = '<tr><td colspan="3">Selecione um usuário.</td></tr>';
+        return;
+    }
+
+    if (!category) {
+        tabelaBody.innerHTML = '<tr><td colspan="3">Selecione uma categoria.</td></tr>';
+        return;
+    }
+    
+    const filteredFoods = foods.filter(f => f.category === category);
+    
+    if (filteredFoods.length === 0) {
+        tabelaBody.innerHTML = '<tr><td colspan="3">Nenhum alimento encontrado nesta categoria.</td></tr>';
+        return;
+    }
+
+    filteredFoods.forEach(food => {
+        const tr = document.createElement("tr");
+        const quantity = dailyConsumption[food.name] || 0;
+        const totalCal = food.cal * quantity;
+        const { foodName, portionLine } = splitFoodName(food.name, food.cal);
+        const inputId = `qty_${food.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+        tr.innerHTML = `
+            <td>
+                <div class="food-item-container">
+                    <span class="food-name-line">${foodName}</span>
+                    <span class="calorias-base-unidade">${portionLine}</span>
+                </div>
+            </td>
+            <td>
+                <div class="contador-quantidade">
+                    <button onclick="updateQuantity('${food.name.replace(/'/g, "\\'")}', -1)">-</button>
+                    <input type="number" id="${inputId}" class="quantidade-input" value="${quantity}" min="0" onchange="manualUpdateQuantity('${food.name.replace(/'/g, "\\'")}', this.value)">
+                    <button onclick="updateQuantity('${food.name.replace(/'/g, "\\'")}', 1)">+</button>
+                </div>
+            </td>
+            <td>${totalCal} kcal</td>
+        `;
+        tabelaBody.appendChild(tr);
+    });
+}
+function manualUpdateQuantity(foodName, value) {
+    const newQuantity = Number(value);
+    if (isNaN(newQuantity) || newQuantity < 0) {
+        dailyConsumption[foodName] = 0;
+    } else {
+        dailyConsumption[foodName] = newQuantity;
+    }
+    saveConsumoDoDia();
+    gerarTabelaAlimentos(); 
+}
+function getConsumedTotals(nome, user) {
+    let consumedDieta = 0;
+    let consumedMes = 0;
+    const today = new Date().toISOString().split('T')[0]; 
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(`${DAILY_CONSUMPTION_PREFIX}${nome}_`)) {
+            try {
+                const consumption = JSON.parse(localStorage.getItem(key));
+                let dailyTotal = 0;
+                for (const [foodName, quantity] of Object.entries(consumption)) {
+                    const food = allFoodsMap.get(foodName);
+                    if (food) {
+                        dailyTotal += food.cal * quantity;
+                    }
+                }
+                consumedDieta += dailyTotal;
+
+                const consumptionDateStr = key.substring((`${DAILY_CONSUMPTION_PREFIX}${nome}_`).length);
+                const currentMonth = today.substring(0, 7); 
+                const consumptionMonth = consumptionDateStr.substring(0, 7); 
+
+                if (currentMonth === consumptionMonth) {
+                    consumedMes += dailyTotal;
+                }
+
+            } catch (e) {
+                console.error("Erro ao processar consumo salvo:", e);
+            }
+        }
+    }
+    return { consumedMes, consumedDieta };
+}
+function updateDailyTotal() {
+    if (!currentUser) return;
+    
+    // 1. Total do Dia
+    let totalCalories = 0;
+    for (const [foodName, quantity] of Object.entries(dailyConsumption)) {
+        const food = allFoodsMap.get(foodName);
+        if (food) {
+            totalCalories += food.cal * quantity;
+        }
+    }
+    document.getElementById("totalCalories").textContent = totalCalories.toFixed(0);
+    
+    // 2. Limites e Restantes
+    const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${currentUser}`) || "{}");
+    const { calDia, calMes, calTotalDieta } = calcularResultados(userCadastro);
+    const { consumedMes, consumedDieta } = getConsumedTotals(currentUser, userCadastro);
+
+    // Re-calcula o total consumido no dia 
+    let consumedDayRecalculated = 0;
+    for (const [foodName, quantity] of Object.entries(dailyConsumption)) {
+        const food = allFoodsMap.get(foodName);
+        if (food) {
+            consumedDayRecalculated += food.cal * quantity;
+        }
+    }
+    
+    // Garante que o consumedMes e consumedDieta não contem o valor de hoje duplicado
+    const currentDayKey = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${document.getElementById("consumptionDate").value}`;
+    let consumedMesExcludingToday = consumedMes;
+    let consumedDietaExcludingToday = consumedDieta;
+    
+    const savedConsumptionToday = JSON.parse(localStorage.getItem(currentDayKey) || "{}");
+    let savedTotalToday = 0;
+    for (const [foodName, quantity] of Object.entries(savedConsumptionToday)) {
+        const food = allFoodsMap.get(foodName);
+        if (food) {
+            savedTotalToday += food.cal * quantity;
+        }
+    }
+    
+    consumedMesExcludingToday -= savedTotalToday;
+    consumedDietaExcludingToday -= savedTotalToday;
+    
+    const remainingMes = calMes - (consumedMesExcludingToday + consumedDayRecalculated);
+    const remainingDieta = calTotalDieta - (consumedDietaExcludingToday + consumedDayRecalculated);
+    
+    document.getElementById("remainingCalories").textContent = remainingMes.toFixed(0);
+    document.getElementById("remainingTotalDieta").textContent = remainingDieta.toFixed(0);
+
+    // 3. Alerta de Áudio 
+    const calLimit = Number(document.getElementById("caloriesLimit").value);
+    if (totalCalories > calLimit && !speaking) {
+        falarAlerta(currentUser);
+    }
+}
+function falarAlerta(nomeUsuario) {
+    if ('speechSynthesis' in window) {
+        speaking = true;
+        const synth = window.speechSynthesis;
+        
+        // MENSAGEM PERSONALIZADA ATUALIZADA
+        // Mudança solicitada: "preste mais atenção"
+        const mensagem = `${nomeUsuario}, você já atingiu suas calorias de hoje, preste mais atenção.`;
+        
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = 'pt-BR';
+        utterance.onend = () => { speaking = false; };
+        synth.speak(utterance);
+    }
+}
+function generateDailyReport() {
+    if (!currentUser) {
+        alert("Selecione um usuário primeiro.");
+        return;
+    }
+    const date = document.getElementById("consumptionDate").value;
+    if (!date) {
+        alert("Selecione uma data.");
+        return;
+    }
+    
+    const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${currentUser}`) || "{}");
+    const { calDia } = calcularResultados(userCadastro);
+    
+    const consumedItems = [];
+    let totalCalories = 0;
+    for (const [foodName, quantity] of Object.entries(dailyConsumption)) {
+        if (quantity > 0) {
+            const food = allFoodsMap.get(foodName);
+            const calTotal = food.cal * quantity;
+            consumedItems.push({ foodName, quantity, calTotal });
+            totalCalories += calTotal;
+        }
+    }
+    
+    // Captura o CSS da Seção 3 para incluir no HTML do relatório
+    const reportCss = document.querySelector('style').textContent.match(/\/\* SEÇÃO 3: CSS do Relatório Diário \*\/(.|\n)*$/)[0];
+
+    const reportHTML = `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Relatório Diário de Consumo</title>
+            <style>
+                ${reportCss}
+            </style>
+        </head>
+        <body class="report-body">
+            <h1>Relatório Diário de Consumo</h1>
+            <h2>👤 Usuário: ${currentUser}</h2>
+            <p>🗓️ Data: <b>${formatDateToBR(date)}</b></p>
+            <p>🎯 Limite Calórico Diário: <b>${calDia.toFixed(0)} kcal</b></p>
+            
+            <h2>🍽️ Alimentos Consumidos</h2>
+            <ul>
+                ${consumedItems.map(item => `
+                    <li>
+                        ${item.foodName} &times; ${item.quantity} porção(ões) 
+                        (Total: <b>${item.calTotal} kcal</b>)
+                    </li>
+                `).join('')}
+                ${consumedItems.length === 0 ? '<li>Nenhum alimento registrado para este dia.</li>' : ''}
+            </ul>
+            
+            <div class="cal-summary">
+                Total Consumido no Dia: ${totalCalories.toFixed(0)} kcal
+            </div>
+            
+            <p style="margin-top: 2rem;">Status: ${totalCalories > calDia ? 
+                `<b style="color:#ff4d4d;">Limite excedido em ${(totalCalories - calDia).toFixed(0)} kcal!</b>` : 
+                `<b style="color:#4dff4d;">Dentro do limite. Restam ${(calDia - totalCalories).toFixed(0)} kcal.</b>`}</p>
+        </body>
+        </html>
+    `;
+    
+    // Cria um blob e um link para download
+    const blob = new Blob([reportHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Relatorio_Diario_${currentUser}_${date}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function abrirAnalise(fechar) {
+    const cadastroSection = document.getElementById("cadastroSection");
+    const resultadoSection = document.getElementById("resultadoSection");
+    const controleSection = document.getElementById("controleSection");
+    const listaSection = document.getElementById("listaSection");
+    const toggleButton = document.getElementById("toggleCadastroButton");
+    const loginData = getLoginData();
+
+    if (!loginData) return; 
+
+    if (fechar) {
+        cadastroSection.classList.add("hidden");
+        resultadoSection.classList.add("hidden");
+        controleSection.classList.remove("hidden");
+        listaSection.classList.remove("hidden");
+        toggleButton.textContent = "Abrir Análise";
+        toggleButton.onclick = () => abrirAnalise(false);
+    } else {
+        cadastroSection.classList.remove("hidden");
+        resultadoSection.classList.add("hidden");
+        controleSection.classList.add("hidden");
+        listaSection.classList.add("hidden");
+        toggleButton.textContent = "Fechar Análise";
+        toggleButton.onclick = () => abrirAnalise(true);
+        
+        const nomeInput = document.getElementById("nome");
+        if (nomeInput.value.trim() && localStorage.getItem(`${USER_PREFIX}${nomeInput.value.trim()}`)) {
+            loadUserCadastro(nomeInput.value.trim());
+        }
+    }
+}
+
+
+// Executa a verificação de login ao carregar a página
+window.onload = function() {
+    checkLoginState();
+    mostrarLista(); 
+};
+
+</script>
+</body>
+</html>
