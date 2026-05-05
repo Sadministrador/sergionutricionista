@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="theme-color" content="#000000">
-    <title>Sérgio,s Nutrição & Saúde</title>
+    <title>Dieta Monitorada</title>
     <style>
         /* ------------------------------------- */
         /* SEÇÃO 1: CSS BASE */
@@ -166,19 +166,10 @@
 <body>
 <div class="main-container">
     <h1>
-        <span>Sérgio,s</span> Nutrição & Saúde
+        Dieta Monitorada
     </h1>
     
-    <div id="loginSection">
-        <h2>🔒 Acesso ao Sistema</h2>
-        <label for="senhaAcesso">Senha de Acesso 
-            <input type="password" id="senhaAcesso" placeholder="">
-        </label>
-        <button id="loginButton" onclick="fazerLogin()">Entrar</button>
-        <p id="loginMessage" style="color:var(--primary-color); font-weight: bold; margin-top: 1rem;" class="hidden"></p>
-    </div>
-    
-    <div id="cadastroSection" class="hidden">
+    <div id="cadastroSection">
         <h2>1️⃣ Cadastro do Usuário</h2>
         <button id="toggleCadastroButton" onclick="abrirAnalise(true)">Fechar Análise</button> 
         <div id="cadastroForm">
@@ -288,8 +279,6 @@ const CALORIAS_POR_KG = 7700;
 const DIAS_NO_MES = 30;
 const USER_PREFIX = "userCadastro_";
 const DAILY_CONSUMPTION_PREFIX = "dailyConsumption_";
-// NOVOS ITENS PARA LOCALSTORAGE DE LOGIN
-const LOGIN_KEY = "loginData";
 let speaking = false;
 let currentUser = null;
 let dailyConsumption = {};
@@ -362,16 +351,16 @@ const foods = [
     { category: "Bebidas", name: "Nestlé Nesquik com leite (200ml)", cal: 160 },
     { category: "Bebidas", name: "Suco de laranja (200ml)", cal: 90 },
     { category: "Bebidas", name: "Chá sem açúcar (200ml)", cal: 2 },  
-{ category: "Bebidas", name: "Café com açúcar (200ml)", cal: 40 },
-{ category: "Bebidas", name: "Café sem açúcar (200ml)", cal: 2 },
-{ category: "Bebidas", name: "Café com adoçante (200ml)", cal: 2 },
+    { category: "Bebidas", name: "Café com açúcar (200ml)", cal: 40 },
+    { category: "Bebidas", name: "Café sem açúcar (200ml)", cal: 2 },
+    { category: "Bebidas", name: "Café com adoçante (200ml)", cal: 2 },
     { category: "Bebidas", name: "Chá com açúcar (200ml)", cal: 20 },
     { category: "Bebidas", name: "Energético (250ml)", cal: 110 },
     { category: "Bebidas", name: "Limonada (200ml)", cal: 40 },
     { category: "Bebidas", name: "Champanhe (150ml)", cal: 90 },
     { category: "Bebidas", name: "Suco de caixa (200ml)", cal: 100 },
-{ category: "Bebidas", name: "Leite de caixa integral (200ml)", cal: 120 },
-{ category: "Bebidas", name: "Leite de caixa desnatado (200ml)", cal: 70 },
+    { category: "Bebidas", name: "Leite de caixa integral (200ml)", cal: 120 },
+    { category: "Bebidas", name: "Leite de caixa desnatado (200ml)", cal: 70 },
     { category: "Frios", name: "Apresuntado (30g)", cal: 45 },
     { category: "Frios", name: "Mortadela (30g)", cal: 90 },
     { category: "Frios", name: "Mussarela (30g)", cal: 80 },
@@ -398,7 +387,7 @@ const foods = [
     { category: "Carnes e ovos", name: "Torresmo (100g)", cal: 550 },
     { category: "Carnes e ovos", name: "Carré (100g)", cal: 220 },
     { category: "Carnes e ovos", name: "Almôndega (100g)", cal: 250 },
-{ category: "Carnes e ovos", name: "Nuggets (100g)", cal: 280 },
+    { category: "Carnes e ovos", name: "Nuggets (100g)", cal: 280 },
     { category: "Doces", name: "Bolo normal (1 fatia média)", cal: 250 },
     { category: "Doces", name: "Bolo confeitado (1 fatia média)", cal: 350 },
     { category: "Doces", name: "Pudim (1 fatia média)", cal: 220 },
@@ -466,150 +455,7 @@ const foods = [
 ];
 const allFoodsMap = new Map(foods.map(f => [f.name, f]));
 
-// ===============================================
-// INÍCIO DAS FUNÇÕES DE LOGIN/EXPIRAÇÃO
-// ===============================================
-
-/**
- * Calcula a data de expiração com base na duração da dieta.
- * @param {number} meses - Duração da dieta em meses (3 ou 6).
- * @returns {number} Timestamp (milissegundos) da data de expiração.
- */
-function calculateExpirationTime(meses) {
-    const today = new Date();
-    // Adiciona o número de meses ao mês atual
-    today.setMonth(today.getMonth() + meses);
-    return today.getTime();
-}
-
-/**
- * Tenta carregar os dados de login salvos.
- * @returns {object | null} Dados de login ou null se não houver ou estiver expirado.
- */
-function getLoginData() {
-    try {
-        const data = JSON.parse(localStorage.getItem(LOGIN_KEY));
-        if (data && data.expirationTime && new Date().getTime() < data.expirationTime) {
-            return data;
-        }
-        // Se a data expirar, remove os dados salvos para forçar novo login
-        localStorage.removeItem(LOGIN_KEY);
-        return null;
-    } catch (e) {
-        console.error("Erro ao carregar dados de login:", e);
-        localStorage.removeItem(LOGIN_KEY);
-        return null;
-    }
-}
-
-/**
- * Salva a senha e o tempo de expiração no localStorage.
- * O tempo de expiração será o mesmo da duração da dieta (3 ou 6 meses).
- * @param {string} senha - A senha de acesso.
- * @param {number} duracaoMeses - Duração da dieta em meses (3 ou 6).
- */
-function saveLoginData(senha, duracaoMeses) {
-    const expirationTime = calculateExpirationTime(duracaoMeses);
-    const loginData = {
-        senha: senha,
-        loggedIn: true,
-        expirationTime: expirationTime,
-        duracaoMeses: duracaoMeses
-    };
-    try {
-        localStorage.setItem(LOGIN_KEY, JSON.stringify(loginData));
-    } catch (e) {
-        console.error("Erro ao salvar dados de login:", e);
-    }
-}
-
-/**
- * Verifica o estado de login ao carregar a página.
- * Se houver login válido, oculta o campo de senha e mostra o app.
- */
-function checkLoginState() {
-    const loginData = getLoginData();
-    const loginSection = document.getElementById("loginSection");
-    const cadastroSection = document.getElementById("cadastroSection");
-    const senhaAcessoInput = document.getElementById("senhaAcesso");
-    const loginButton = document.getElementById("loginButton");
-    const loginLabel = document.querySelector('label[for="senhaAcesso"]');
-
-    // Sempre esconde o conteúdo do app ao iniciar (exceto login)
-    cadastroSection.classList.add("hidden");
-    document.getElementById("resultadoSection").classList.add("hidden");
-    document.getElementById("listaSection").classList.add("hidden");
-    document.getElementById("controleSection").classList.add("hidden");
-
-    if (loginData && loginData.loggedIn) {
-        // Login válido: Oculta a seção de login (mas mantém o h2)
-        loginSection.classList.remove("hidden"); // Mantém a seção para mostrar a mensagem
-        
-        // Oculta o campo de senha e o botão "Entrar"
-        senhaAcessoInput.classList.add('hidden');
-        loginButton.classList.add('hidden');
-        if (loginLabel) loginLabel.classList.add('hidden');
-
-        // Preenche o campo de senha com a senha salva (para usos internos se necessário)
-        senhaAcessoInput.value = loginData.senha;
-        
-        // Mostra a mensagem de login automático
-        const loginMessage = document.getElementById("loginMessage");
-        const expirationDate = new Date(loginData.expirationTime).toLocaleDateString('pt-BR');
-        loginMessage.textContent = `Acesso automático: Senha salva por ${loginData.duracaoMeses} meses. Expira em ${expirationDate}.`;
-        loginMessage.classList.remove("hidden");
-
-        // Mostra o conteúdo do app
-        cadastroSection.classList.remove("hidden");
-        document.getElementById("controleSection").classList.remove("hidden");
-
-    } else {
-        // Login inválido ou expirado: Mostra o campo de senha
-        loginSection.classList.remove("hidden");
-        senhaAcessoInput.classList.remove('hidden');
-        loginButton.classList.remove('hidden');
-        if (loginLabel) loginLabel.classList.remove('hidden');
-        document.getElementById("loginMessage").classList.add("hidden");
-    }
-}
-
-/**
- * Função de Login: Adiciona lógica para salvar a senha no localStorage APENAS
- * se o login for bem-sucedido.
- */
-function fazerLogin() {
-    const senhaInput = document.getElementById("senhaAcesso");
-    const senha = senhaInput.value;
-    const loginMessage = document.getElementById("loginMessage");
-    const cadastroSection = document.getElementById("cadastroSection");
-
-    // Regex da senha: /^[1-9]{3}[a-zA-Z]{3}0{6}o{3}.{2}$/
-    const regex = /^[1-9]{3}[a-zA-Z]{3}0{6}o{3}.{2}$/;
-
-    if (regex.test(senha)) {
-        loginMessage.textContent = "Login bem-sucedido! Ocultando campo de senha.";
-        loginMessage.classList.remove("hidden");
-
-        // Salva a senha com a duração inicial da dieta
-        const duracaoInicial = Number(document.getElementById("duracaoDieta").value) || 6;
-        saveLoginData(senha, duracaoInicial);
-
-        // Oculta o campo de senha e mostra o app
-        checkLoginState();
-        
-    } else {
-        loginMessage.textContent = "Senha incorreta. O padrão é: [3 dígitos 1-9][3 letras a-Z][6 zeros][3 'o'][2 caracteres qualquer].";
-        loginMessage.classList.remove("hidden");
-        senhaInput.value = '';
-        senhaInput.focus();
-        cadastroSection.classList.add("hidden");
-    }
-}
-// ===============================================
-// FIM DAS FUNÇÕES DE LOGIN/EXPIRAÇÃO
-// ===============================================
-
-// Funções utilitárias e de interface (Mantidas e revisadas para integração)
+// Funções utilitárias e de interface
 function splitFoodName(name, cal) {
     const match = name.match(/^(.*?)(\s*\((.*?)\))?$/);
     let foodName = name;
@@ -681,14 +527,6 @@ function saveUserCadastro() {
     try { localStorage.setItem(`${USER_PREFIX}${nome}`, JSON.stringify(userCadastro)); } catch (e) { console.error("Erro ao salvar cadastro", e); }
     resetAnalisarButton();
     mostrarLista(nome);
-
-    // Atualiza o tempo de expiração do login ao salvar o cadastro
-    const loginData = getLoginData();
-    if (loginData) {
-        const senhaSalva = document.getElementById("senhaAcesso").value; 
-        saveLoginData(senhaSalva, Number(duracaoDieta));
-        checkLoginState(); // Atualiza a mensagem de expiração
-    }
 }
 function loadUserCadastro(nome) {
     if (!nome) return;
@@ -769,9 +607,7 @@ function mostrarLista(nomeParaSelecionar = '') {
         }
     });
 
-    if (getLoginData()) {
-        document.getElementById("listaSection").classList.remove("hidden");
-    }
+    document.getElementById("listaSection").classList.remove("hidden");
 }
 function calcularResultados(user) {
     const { idade, genero, altura, peso, duracaoDieta, tipoDieta, exercicio } = user;
@@ -860,7 +696,6 @@ function analisar() {
     const { consumedMes, consumedDieta } = getConsumedTotals(nome, user);
     const faltamMes = calMes - consumedMes;
     const faltamDieta = calTotalDieta - consumedDieta;
-    
 
     // Exibir resultados
     document.getElementById("resNome").textContent = nome;
@@ -886,10 +721,7 @@ function analisar() {
     document.getElementById("analisarButton").textContent = "Análise Atualizada";
     document.getElementById("analisarButton").classList.add("active");
 
-    // Salva o cadastro (e atualiza a duração do login)
     saveUserCadastro();
-
-    // Carrega o usuário na seção de controle e a data de hoje
     carregarUsuarioControle(nome, calDia);
 }
 function salvarNutri() {
@@ -1112,7 +944,6 @@ function updateDailyTotal() {
     const { calDia, calMes, calTotalDieta } = calcularResultados(userCadastro);
     const { consumedMes, consumedDieta } = getConsumedTotals(currentUser, userCadastro);
 
-    // Re-calcula o total consumido no dia 
     let consumedDayRecalculated = 0;
     for (const [foodName, quantity] of Object.entries(dailyConsumption)) {
         const food = allFoodsMap.get(foodName);
@@ -1121,7 +952,6 @@ function updateDailyTotal() {
         }
     }
     
-    // Garante que o consumedMes e consumedDieta não contem o valor de hoje duplicado
     const currentDayKey = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${document.getElementById("consumptionDate").value}`;
     let consumedMesExcludingToday = consumedMes;
     let consumedDietaExcludingToday = consumedDieta;
@@ -1154,11 +984,7 @@ function falarAlerta(nomeUsuario) {
     if ('speechSynthesis' in window) {
         speaking = true;
         const synth = window.speechSynthesis;
-        
-        // MENSAGEM PERSONALIZADA ATUALIZADA
-        // Mudança solicitada: "preste mais atenção"
         const mensagem = `${nomeUsuario}, você já atingiu suas calorias de hoje, preste mais atenção.`;
-        
         const utterance = new SpeechSynthesisUtterance(mensagem);
         utterance.lang = 'pt-BR';
         utterance.onend = () => { speaking = false; };
@@ -1190,7 +1016,6 @@ function generateDailyReport() {
         }
     }
     
-    // Captura o CSS da Seção 3 para incluir no HTML do relatório
     const reportCss = document.querySelector('style').textContent.match(/\/\* SEÇÃO 3: CSS do Relatório Diário \*\/(.|\n)*$/)[0];
 
     const reportHTML = `
@@ -1232,7 +1057,6 @@ function generateDailyReport() {
         </html>
     `;
     
-    // Cria um blob e um link para download
     const blob = new Blob([reportHTML], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1250,9 +1074,6 @@ function abrirAnalise(fechar) {
     const controleSection = document.getElementById("controleSection");
     const listaSection = document.getElementById("listaSection");
     const toggleButton = document.getElementById("toggleCadastroButton");
-    const loginData = getLoginData();
-
-    if (!loginData) return; 
 
     if (fechar) {
         cadastroSection.classList.add("hidden");
@@ -1276,11 +1097,10 @@ function abrirAnalise(fechar) {
     }
 }
 
-
-// Executa a verificação de login ao carregar a página
+// Inicializa a página diretamente sem verificação de senha
 window.onload = function() {
-    checkLoginState();
-    mostrarLista(); 
+    mostrarLista();
+    document.getElementById("controleSection").classList.remove("hidden");
 };
 
 </script>
