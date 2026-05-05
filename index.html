@@ -5,232 +5,328 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="theme-color" content="#000000">
     <title>Dieta Monitorada</title>
     <style>
-        /* ------------------------------------- */
-        /* SEÇÃO 1: CSS BASE */
-        /* ------------------------------------- */
         :root {
-            --primary-color: #f40000;
-            --secondary-color: #1400ff;
-            --background-color: #000;
-            --text-color: #fff;
-            --input-bg-color: #1a1a1a;
+            --primary: #f40000;
+            --secondary: #1400ff;
+            --bg: #000;
+            --text: #fff;
+            --input-bg: #1a1a1a;
             --max-width: 800px;
-            font-size: 28px;
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         html { font-size: 169.5%; }
         html, body { height: 100%; width: 100%; overflow-x: hidden; }
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            background: var(--background-color);
-            color: var(--text-color);
-            margin: 0; padding: 0; padding-bottom: 7rem;
-            box-sizing: border-box; line-height: 1.6;
+            background: var(--bg);
+            color: var(--text);
+            padding-bottom: 4rem;
+            line-height: 1.6;
         }
-        .main-container {
-            max-width: var(--max-width);
-            margin: 0 auto;
-            padding: 2rem;
-            box-sizing: border-box;
-            min-height: 100vh;
+
+        /* ===== OVERLAY DE CADASTRO ===== */
+        #registerOverlay {
+            position: fixed; inset: 0;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 2rem 1rem;
         }
-        h1 { color: var(--text-color); text-align: center; line-height: 1.2; font-size: 3rem; margin-bottom: 2rem; }
-        h1 span { display: block; color: var(--text-color); font-size: 2rem; font-weight: bold; margin-bottom: 0.3rem; }
-        h2 { color: var(--primary-color); border-bottom: 2px solid rgba(244, 0, 0, 0.7); padding-bottom: 0.8rem; margin-top: 3.5rem; font-size: 2rem; }
+        #registerOverlay.hidden { display: none !important; }
+
+        .reg-box {
+            background: #0d0d0d;
+            border: 3px solid var(--primary);
+            border-radius: 1.5rem;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 0 40px rgba(244,0,0,0.3);
+        }
+        .reg-box h2 {
+            color: var(--primary);
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            border: none;
+            margin-top: 0;
+        }
+        .reg-subtitle {
+            text-align: center;
+            color: #aaa;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        .reg-field { margin-bottom: 1.2rem; }
+        .reg-field label { display: block; font-size: 1rem; font-weight: bold; margin-bottom: 0.4rem; color: #ccc; }
+        .reg-field input[type="text"],
+        .reg-field input[type="number"],
+        .reg-field input[type="email"],
+        .reg-field input[type="tel"] {
+            width: 100%; padding: 0.9rem 1rem; border-radius: 0.8rem;
+            border: 2px solid #333; background: #1a1a1a; color: #fff;
+            font-size: 1rem; transition: border-color 0.3s;
+        }
+        .reg-field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px rgba(244,0,0,0.4); }
+
+        .photo-upload-area {
+            border: 2px dashed #444; border-radius: 1rem; padding: 1.5rem;
+            text-align: center; cursor: pointer; transition: border-color 0.3s;
+            position: relative; background: #111;
+        }
+        .photo-upload-area:hover { border-color: var(--primary); }
+        .photo-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .photo-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); display: none; margin: 0 auto 0.5rem; }
+        .photo-upload-icon { font-size: 2.5rem; margin-bottom: 0.3rem; }
+        .photo-upload-text { font-size: 0.85rem; color: #888; }
+
+        .terms-row {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: #111; border: 2px solid #333; border-radius: 0.8rem;
+            padding: 1rem; margin-bottom: 1.5rem;
+        }
+        .terms-row input[type="checkbox"] { width: 22px; height: 22px; min-width: 22px; accent-color: var(--primary); cursor: pointer; margin-top: 2px; }
+        .terms-row label { font-size: 0.9rem; color: #bbb; cursor: pointer; }
+        .terms-row label a { color: var(--primary); text-decoration: underline; }
+
+        .trial-badge {
+            background: linear-gradient(135deg, #1a0000, #330000);
+            border: 2px solid var(--primary); border-radius: 1rem;
+            padding: 1rem; text-align: center; margin-bottom: 1.5rem;
+            font-size: 0.9rem; color: #ffaaaa;
+        }
+        .trial-badge strong { color: var(--primary); font-size: 1.1rem; }
+
+        #btnRegister {
+            width: 100%; padding: 1.1rem; background: var(--primary); color: #fff;
+            border: none; border-radius: 1rem; font-size: 1.1rem; font-weight: 900;
+            cursor: pointer; letter-spacing: 1px; transition: background 0.3s;
+            box-shadow: 0 6px 20px rgba(244,0,0,0.4);
+        }
+        #btnRegister:hover { background: #c40000; }
+        #btnRegister:disabled { background: #444; cursor: not-allowed; box-shadow: none; }
+
+        /* ===== OVERLAY BLOQUEADO ===== */
+        #blockedOverlay {
+            position: fixed; inset: 0; background: #000; z-index: 9998;
+            display: flex; align-items: center; justify-content: center; padding: 2rem;
+        }
+        #blockedOverlay.hidden { display: none !important; }
+        .blocked-box { text-align: center; max-width: 420px; }
+        .blocked-icon { font-size: 5rem; margin-bottom: 1rem; }
+        .blocked-box h2 { color: var(--primary); font-size: 2rem; margin-bottom: 1rem; }
+        .blocked-box p { color: #bbb; font-size: 1rem; margin-bottom: 1.5rem; line-height: 1.7; }
+        .whatsapp-btn {
+            display: inline-flex; align-items: center; gap: 0.8rem;
+            background: #25D366; color: #fff; padding: 1rem 2rem; border-radius: 1rem;
+            font-size: 1.1rem; font-weight: bold; text-decoration: none; transition: background 0.3s; margin-bottom: 1rem;
+        }
+        .whatsapp-btn:hover { background: #1ebe5d; }
+        .btn-recadastrar {
+            display: block; width: 100%; padding: 0.9rem; background: #222; color: #aaa;
+            border: 2px solid #444; border-radius: 1rem; font-size: 0.95rem; cursor: pointer; margin-top: 1rem; transition: all 0.3s;
+        }
+        .btn-recadastrar:hover { border-color: var(--primary); color: #fff; }
+
+        /* ===== OVERLAY AGUARDANDO ===== */
+        #waitingOverlay {
+            position: fixed; inset: 0; background: #000; z-index: 9997;
+            display: flex; align-items: center; justify-content: center; padding: 2rem;
+        }
+        #waitingOverlay.hidden { display: none !important; }
+        .waiting-box { text-align: center; max-width: 420px; }
+        .waiting-icon { font-size: 4rem; margin-bottom: 1rem; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .waiting-box h2 { color: #FFD700; font-size: 1.8rem; margin-bottom: 1rem; }
+        .waiting-box p { color: #bbb; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.7; }
+
+        /* Timer */
+        #timerBar {
+            background: #111; border: 2px solid var(--primary); border-radius: 1rem;
+            padding: 0.8rem 1.2rem; text-align: center; font-size: 0.9rem; color: #aaa;
+            position: fixed; top: 0.5rem; right: 0.5rem; z-index: 1000; min-width: 120px;
+        }
+        #timerBar.hidden { display: none; }
+        #timerCount { color: var(--primary); font-weight: bold; font-size: 1.1rem; }
+
+        /* ===== APP PRINCIPAL ===== */
+        .main-container { max-width: var(--max-width); margin: 0 auto; padding: 2rem; box-sizing: border-box; min-height: 100vh; }
+        h1 { color: var(--text); text-align: center; line-height: 1.2; font-size: 3rem; margin-bottom: 2rem; }
+        h1 span { display: block; color: var(--text); font-size: 2rem; font-weight: bold; margin-bottom: 0.3rem; }
+        h2 { color: var(--primary); border-bottom: 2px solid rgba(244,0,0,0.7); padding-bottom: 0.8rem; margin-top: 3.5rem; font-size: 2rem; }
         #cadastroForm { display: grid; grid-template-columns: 1fr; gap: 1.8rem; }
         input, select, button {
-            padding: 1.5rem; border-radius: 1rem; border: 3px solid var(--primary-color);
-            background: var(--input-bg-color); color: var(--text-color); margin: 0;
+            padding: 1.5rem; border-radius: 1rem; border: 3px solid var(--primary);
+            background: var(--input-bg); color: var(--text); margin: 0;
             width: 100%; box-sizing: border-box; transition: all 0.3s; font-size: 1.5rem; min-height: 4rem;
         }
-        input:focus, select:focus { border-color: var(--text-color); box-shadow: 0 0 12px var(--primary-color); background: #222; }
+        input:focus, select:focus { border-color: var(--text); box-shadow: 0 0 12px var(--primary); background: #222; outline: none; }
         label { display: block; margin-top: 0.5rem; font-size: 1.6rem; font-weight: bold; }
         .field-group { display: block; gap: 1.8rem; margin-bottom: 0; }
         .field-group label { margin-top: 1.5rem; }
         button {
-            background: var(--primary-color); color: var(--text-color); font-weight: 900; cursor: pointer;
+            background: var(--primary); color: var(--text); font-weight: 900; cursor: pointer;
             margin-top: 2rem; border: none; font-size: 1.8rem; min-height: 5rem; letter-spacing: 0.5px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7); transition: background-color 0.4s ease, border-color 0.4s ease;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.7); transition: background-color 0.4s ease, border-color 0.4s ease;
         }
         button:hover { background: #c40000; }
-        .active { background: var(--secondary-color) !important; border-color: var(--secondary-color) !important; }
+        .active { background: var(--secondary) !important; border-color: var(--secondary) !important; }
         .active:hover { background: #0000d4 !important; }
-        #analisarButton { background: var(--primary-color); }
-        #analisarButton:hover { background: #c40000; }
-        #loadUserButton { background: var(--primary-color); }
-        #loadUserButton:hover { background: #c40000; }
-        #controleSection button:last-child { background: var(--secondary-color); }
+        #controleSection button:last-child { background: var(--secondary); }
         #controleSection button:last-child:hover { background: #0000d4; }
-        #resultadoSection button { background: var(--primary-color); color: var(--text-color); }
+        #resultadoSection button { background: var(--primary); color: var(--text); }
         #resultadoSection button:hover { background: #c40000; }
-        #toggleCadastroButton { background: #333; border: 1px solid #555; color: var(--text-color); min-height: 4.5rem; font-size: 1.4rem; font-weight: normal; }
+        #toggleCadastroButton { background: #333; border: 1px solid #555; color: var(--text); min-height: 4.5rem; font-size: 1.4rem; font-weight: normal; }
         table { border-collapse: collapse; width: 100%; margin-top: 1.8rem; font-size: 1.3rem; }
-        #listaSection div[style*="overflow-x: auto"], #controleSection div[style*="overflow-x: auto"] { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        th, td { border: 2px solid var(--primary-color); padding: 1.4rem 1rem; text-align: center; font-size: 1.3rem; white-space: nowrap; }
-        th { background: var(--primary-color); color: var(--text-color); font-size: 1.4rem; }
-        tr.category-row td { background-color:#330000; font-weight:bold; color:var(--primary-color); }
-        .calories-total { margin-top: 2.5rem; font-weight:bold; padding: 2rem; border: 4px solid var(--primary-color); border-radius: 1.2rem; background: var(--input-bg-color); font-size: 1.8rem; line-height: 1.8; }
-        .hidden {display:none !important;}
+        th, td { border: 2px solid var(--primary); padding: 1.4rem 1rem; text-align: center; font-size: 1.3rem; white-space: nowrap; }
+        th { background: var(--primary); color: var(--text); font-size: 1.4rem; }
+        .calories-total { margin-top: 2.5rem; font-weight: bold; padding: 2rem; border: 4px solid var(--primary); border-radius: 1.2rem; background: var(--input-bg); font-size: 1.8rem; line-height: 1.8; }
+        .hidden { display: none !important; }
         #resultadoSection p { font-size: 1.5rem; padding: 0.7rem 0; }
-        #resultadoSection b { color: var(--primary-color); }
+        #resultadoSection b { color: var(--primary); }
         .food-item-container { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
         .food-name-line { font-weight: bold; margin-bottom: 2px; text-align: left; }
         .food-cal-line { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .calorias-base-unidade { color: #ffffff; font-size: 0.8em; font-weight: normal; }
         .contador-quantidade { display: flex; align-items: center; justify-content: center; }
-        .contador-quantidade button { padding: 0.8rem; width: 40px; height: 40px; font-size: 2.0rem; line-height: 1; border-radius: 8px; border: 3px solid var(--primary-color); background-color: var(--input-bg-color); color: var(--text-color); transition: background-color 0.2s; margin: 0; margin-top: 0; min-height: 40px; }
+        .contador-quantidade button { padding: 0.8rem; width: 40px; height: 40px; font-size: 2rem; line-height: 1; border-radius: 8px; border: 3px solid var(--primary); background-color: var(--input-bg); color: var(--text); transition: background-color 0.2s; margin: 0; margin-top: 0; min-height: 40px; }
         .contador-quantidade button:hover { background-color: #333; }
-        .contador-quantidade .quantidade-input { width: 60px; padding: 0.5rem 0.1rem; text-align: center; font-size: 1.8rem; border-radius: 0; border-left: none; border-right: none; border-top: 3px solid var(--primary-color); border-bottom: 3px solid var(--primary-color); background: #1a1a1a; color: var(--text-color); box-shadow: none; min-height: 40px; }
+        .contador-quantidade .quantidade-input { width: 60px; padding: 0.5rem 0.1rem; text-align: center; font-size: 1.8rem; border-radius: 0; border-left: none; border-right: none; border-top: 3px solid var(--primary); border-bottom: 3px solid var(--primary); background: #1a1a1a; color: var(--text); box-shadow: none; min-height: 40px; }
         .contador-quantidade .quantidade-input::-webkit-outer-spin-button,
         .contador-quantidade .quantidade-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .contador-quantidade .quantidade-input { -moz-appearance: textfield; }
         #foodTableBody td:nth-child(1) { text-align: left; }
-
-        /* ------------------------------------- */
-        /* CORREÇÃO MOBILE: Tabela de Alimentos  */
-        /* Permite que o nome/calorias não sejam */
-        /* cortados na tela do celular           */
-        /* ------------------------------------- */
         #controleSection table { table-layout: fixed; width: 100%; }
-        #controleSection table th:nth-child(1),
-        #controleSection table td:nth-child(1) {
-            width: 45%;
-            white-space: normal;
-            word-break: break-word;
-        }
-        #controleSection table th:nth-child(2),
-        #controleSection table td:nth-child(2) {
-            width: 35%;
-            white-space: nowrap;
-        }
-        #controleSection table th:nth-child(3),
-        #controleSection table td:nth-child(3) {
-            width: 20%;
-            white-space: normal;
-            word-break: break-word;
-        }
-        #controleSection .food-name-line {
-            white-space: normal;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
-        #controleSection .calorias-base-unidade {
-            white-space: normal;
-            word-break: break-word;
-        }
+        #controleSection table th:nth-child(1), #controleSection table td:nth-child(1) { width: 45%; white-space: normal; word-break: break-word; }
+        #controleSection table th:nth-child(2), #controleSection table td:nth-child(2) { width: 35%; white-space: nowrap; }
+        #controleSection table th:nth-child(3), #controleSection table td:nth-child(3) { width: 20%; white-space: normal; word-break: break-word; }
+        #controleSection .food-name-line { white-space: normal; word-break: break-word; overflow-wrap: break-word; }
+        #controleSection .calorias-base-unidade { white-space: normal; word-break: break-word; }
 
-        /* ------------------------------------- */
-        /* SEÇÃO 2: CSS de Impressão */
-        /* ------------------------------------- */
-        @media print {
-            button, #cadastroSection, #userSelect, #loadUserButton, 
-            #categorySelect, .contador-quantidade, 
-            #controleSection h2:nth-of-type(1), #listaSection { 
-                display: none !important; 
-            }
-            @page { margin: 10mm; }
-
-            #resultadoSection {
-                position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 10mm;
-                box-sizing: border-box; font-size: 10pt; color: #000; background: #fff;
-            }
-            
-            h1, h2 { color: #000 !important; border-bottom: 1px solid #000 !important; font-size: 14pt; margin-top: 5pt; padding-bottom: 5pt; }
-            h1 span { font-size: 10pt; }
-            #resultadoSection p, .calories-total { font-size: 10pt; line-height: 1.2; padding: 2pt 0; color: #000; }
-            .calories-total { border: 2px solid #000; padding: 5pt; }
+        /* User info bar */
+        #userInfoBar {
+            background: #111; border-bottom: 2px solid var(--primary);
+            padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;
         }
-
-        /* ------------------------------------- */
-        /* SEÇÃO 3: CSS do Relatório Diário */
-        /* ------------------------------------- */
-        .report-body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 30px; 
-            background: #000; 
-            color: #fff; 
-            min-height: 100vh;
-        }
-        .report-body h1 { 
-            font-size: 3rem; 
-            color: #f40000; 
-            text-align: center; 
-            margin-bottom: 3rem;
-            border-bottom: 4px solid #f40000;
-            padding-bottom: 1rem;
-        }
-        .report-body h2 {
-             font-size: 2.5rem; 
-             color: #fff; 
-             margin-top: 2rem; 
-             border-bottom: 2px solid #555; 
-             padding-bottom: 0.5rem;
-        }
-        .report-body p { 
-            font-size: 2rem; 
-            margin: 1rem 0; 
-            line-height: 1.5;
-        }
-        .report-body b { color: #1400ff; }
-        .report-body .cal-summary {
-            font-size: 3rem;
-            color: #f40000;
-            font-weight: bold;
-            margin-top: 3rem;
-            padding: 2rem;
-            border: 4px solid #f40000;
-            text-align: center;
-        }
-        .report-body ul {
-            list-style: none;
-            padding: 0;
-        }
-        .report-body ul li {
-            font-size: 2rem;
-            padding: 0.8rem 0;
-            border-bottom: 1px dotted #555; 
-        }
+        #userInfoBar.hidden { display: none; }
+        #userInfoBar img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        #userInfoBar .user-name { font-weight: bold; color: var(--primary); font-size: 1rem; }
+        #userInfoBar .user-status { color: #aaa; font-size: 0.8rem; }
+        .status-pago { color: #4dff4d !important; }
+        .status-trial { color: #FFD700 !important; }
+        #userInfoBar button { margin-left: auto; margin-top: 0; padding: 0.4rem 1rem; font-size: 0.8rem; min-height: auto; background: #222; border: 1px solid #444; border-radius: 0.5rem; }
+        #userInfoBar button:hover { background: #333; }
     </style>
-    </head>
+</head>
 <body>
+
+<!-- ===== OVERLAY: CADASTRO ===== -->
+<div id="registerOverlay">
+    <div class="reg-box">
+        <h2>🥗 Dieta Monitorada</h2>
+        <p class="reg-subtitle">Cadastre-se para começar seu teste gratuito</p>
+        <div class="trial-badge">
+            <strong>⏱️ Teste GRATUITO por 10 horas!</strong><br>
+            Após o período, assine para continuar com acesso completo.
+        </div>
+        <div class="reg-field">
+            <label>📸 Sua Foto</label>
+            <div class="photo-upload-area" id="photoArea">
+                <input type="file" id="photoInput" accept="image/*" onchange="previewPhoto(this)">
+                <img id="photoPreview" class="photo-preview" src="" alt="Foto">
+                <div id="photoPlaceholder">
+                    <div class="photo-upload-icon">📷</div>
+                    <div class="photo-upload-text">Toque para selecionar uma foto</div>
+                </div>
+            </div>
+        </div>
+        <div class="reg-field">
+            <label>👤 Nome completo *</label>
+            <input type="text" id="regNome" placeholder="Seu nome completo">
+        </div>
+        <div class="reg-field">
+            <label>🎂 Idade *</label>
+            <input type="number" id="regIdade" placeholder="Sua idade" min="1" max="120">
+        </div>
+        <div class="reg-field">
+            <label>📱 WhatsApp / Telefone *</label>
+            <input type="tel" id="regTelefone" placeholder="(21) 99999-9999">
+        </div>
+        <div class="reg-field">
+            <label>📧 E-mail *</label>
+            <input type="email" id="regEmail" placeholder="seu@email.com">
+        </div>
+        <div class="terms-row">
+            <input type="checkbox" id="aceitoTermos">
+            <label for="aceitoTermos">
+                ✅ Li e aceito os <a href="#" onclick="alert('Termos: Este aplicativo é para uso pessoal de monitoramento de dieta. O teste é válido por 10 horas.')">Termos de Uso</a> e entendo que o acesso de teste é válido por 10 horas.
+            </label>
+        </div>
+        <button id="btnRegister" onclick="fazerCadastro()">🚀 Começar Teste Gratuito</button>
+    </div>
+</div>
+
+<!-- ===== OVERLAY BLOQUEADO ===== -->
+<div id="blockedOverlay" class="hidden">
+    <div class="blocked-box">
+        <div class="blocked-icon">🔒</div>
+        <h2>Acesso Expirado</h2>
+        <p>Seu período de teste de <strong style="color:var(--primary)">10 horas</strong> chegou ao fim.<br><br>Para continuar, entre em contato pelo WhatsApp!</p>
+        <a href="https://wa.me/5521985492615?text=Olá!%20Quero%20assinar%20o%20Dieta%20Monitorada." class="whatsapp-btn" target="_blank"><span>📲</span> Assinar pelo WhatsApp</a>
+        <br>
+        <button class="btn-recadastrar" onclick="recadastrar()">Fazer novo cadastro de teste</button>
+    </div>
+</div>
+
+<!-- ===== OVERLAY AGUARDANDO ===== -->
+<div id="waitingOverlay" class="hidden">
+    <div class="waiting-box">
+        <div class="waiting-icon">⏳</div>
+        <h2>Cadastro em Análise</h2>
+        <p>Seu cadastro foi enviado e está sendo analisado. Aguarde...</p>
+        <p style="color:#555;font-size:0.8rem">Esta página verifica automaticamente a cada 5 segundos.</p>
+        <br>
+        <a href="https://wa.me/5521985492615?text=Olá!%20Acabei%20de%20me%20cadastrar%20no%20Dieta%20Monitorada." class="whatsapp-btn" target="_blank" style="font-size:0.95rem;padding:0.8rem 1.5rem;"><span>📲</span> Avisar pelo WhatsApp</a>
+    </div>
+</div>
+
+<!-- ===== BARRA USUÁRIO ===== -->
+<div id="userInfoBar" class="hidden">
+    <img id="infoFoto" src="" alt="">
+    <div>
+        <div class="user-name" id="infoNome">-</div>
+        <div class="user-status" id="infoStatus">-</div>
+    </div>
+    <div id="timerBar" class="hidden">⏱️ <span id="timerCount">10:00:00</span></div>
+    <button onclick="recadastrar()">Sair</button>
+</div>
+
+<!-- ===== APP PRINCIPAL ===== -->
+<div id="appMain" class="hidden">
 <div class="main-container">
-    <h1>
-        Dieta Monitorada
-    </h1>
-    
+    <h1>Dieta Monitorada</h1>
     <div id="cadastroSection">
         <h2>1️⃣ Cadastro do Usuário</h2>
-        <button id="toggleCadastroButton" onclick="abrirAnalise(true)">Fechar Análise</button> 
+        <button id="toggleCadastroButton" onclick="abrirAnalise(true)">Fechar Análise</button>
         <div id="cadastroForm">
             <label>Nome: <input type="text" id="nome" placeholder="Seu nome" onchange="saveUserCadastro()"></label>
             <label>Idade (anos): <input type="number" id="idade" placeholder="Anos" min="1" onchange="saveUserCadastro()"></label>
-            <label>Gênero: <select id="genero" onchange="saveUserCadastro()">
-                <option value="Feminino">Feminino</option>
-                <option value="Masculino">Masculino</option>
-            </select></label>
+            <label>Gênero: <select id="genero" onchange="saveUserCadastro()"><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option></select></label>
             <label>Altura (cm): <input type="number" id="altura" placeholder="Ex: 170" onchange="saveUserCadastro()"></label>
             <label>Peso atual (kg): <input type="number" id="peso" placeholder="Ex: 80" onchange="saveUserCadastro()"></label>
             <label>Data de início da dieta: <input type="date" id="dataInicio" onchange="saveUserCadastro()"></label>
-            <label>Duração da Dieta: <select id="duracaoDieta" onchange="saveUserCadastro()">
-                <option value="3">3 Meses</option>
-                <option value="6" selected>6 Meses</option>
-            </select></label>
-            <label>Tipo de Dieta: <select id="tipoDieta" onchange="saveUserCadastro()">
-                <option value="Exata">Exata (foco na perda de peso)</option>
-                <option value="Balanceada">Balanceada (+30% Calorias)</option>
-            </select></label>
-            <label>Pratica exercícios diários? <select id="exercicio" onchange="saveUserCadastro()">
-                <option value="0">Não</option>
-                <option value="1">Sim</option>
-            </select></label>
+            <label>Duração da Dieta: <select id="duracaoDieta" onchange="saveUserCadastro()"><option value="3">3 Meses</option><option value="6" selected>6 Meses</option></select></label>
+            <label>Tipo de Dieta: <select id="tipoDieta" onchange="saveUserCadastro()"><option value="Exata">Exata (foco na perda de peso)</option><option value="Balanceada">Balanceada (+30% Calorias)</option></select></label>
+            <label>Pratica exercícios diários? <select id="exercicio" onchange="saveUserCadastro()"><option value="0">Não</option><option value="1">Sim</option></select></label>
             <button id="analisarButton" onclick="analisar()">Analisar peso ideal</button>
         </div>
     </div>
-    
     <div id="resultadoSection" class="hidden">
         <h2>2️⃣ Resultado da Análise</h2>
         <p>Nome: <b><span id="resNome"></span></b></p>
@@ -251,30 +347,19 @@
         <p>Calorias restantes para consumir na dieta: <b><span id="resFaltandoDieta"></span> kcal</b></p>
         <button onclick="salvarNutri()">Salvar na lista do nutricionista</button>
     </div>
-    
     <div id="listaSection" class="hidden">
-        <h2>3️⃣ Lista do Nutricionista (Permite Rolagem Lateral)</h2>
-        <div style="overflow-x: auto;">
+        <h2>3️⃣ Lista do Nutricionista</h2>
+        <div style="overflow-x:auto">
             <table id="tabelaNutri">
-                <thead>
-                <tr>
-                    <th>Nome</th><th>Idade</th><th>Gênero</th><th>Altura (cm)</th><th>Peso Atual (kg)</th>
-                    <th>IMC</th><th>Peso Ideal (kg)</th><th>Kg a Emagrecer</th>
-                    <th>Cal/Dia</th><th>Cal/Mês</th><th>Total Dieta</th><th>Duração</th><th>Tipo</th><th>Exercício?</th><th>Data Início</th><th>Data Final</th>
-                </tr>
-                </thead>
-                <tbody>
-                    </tbody>
+                <thead><tr><th>Nome</th><th>Idade</th><th>Gênero</th><th>Altura (cm)</th><th>Peso Atual (kg)</th><th>IMC</th><th>Peso Ideal (kg)</th><th>Kg a Emagrecer</th><th>Cal/Dia</th><th>Cal/Mês</th><th>Total Dieta</th><th>Duração</th><th>Tipo</th><th>Exercício?</th><th>Data Início</th><th>Data Final</th></tr></thead>
+                <tbody></tbody>
             </table>
         </div>
     </div>
-    
     <div id="controleSection" class="hidden">
         <h2>🍽️ Controle de Alimentos</h2>
         <label for="userSelect">Selecionar usuário:</label>
-        <select id="userSelect" onchange="resetLoadButton()">
-            <option value="">Selecione um usuário</option>
-            </select>
+        <select id="userSelect" onchange="resetLoadButton()"><option value="">Selecione um usuário</option></select>
         <button id="loadUserButton" onclick="carregarUsuario()">Carregar Usuário</button>
         <div class="field-group">
             <label for="consumptionDate">Data do consumo:</label>
@@ -283,17 +368,11 @@
             <input type="number" id="caloriesLimit" value="0" readonly>
         </div>
         <label for="categorySelect">Selecionar alimentos:</label>
-        <select id="categorySelect" onchange="gerarTabelaAlimentos()">
-            <option value="">Selecione uma categoria</option>
-            </select><br>
-        <div style="overflow-x: auto;">
+        <select id="categorySelect" onchange="gerarTabelaAlimentos()"><option value="">Selecione uma categoria</option></select>
+        <div style="overflow-x:auto">
             <table>
-                <thead>
-                <tr><th>Alimento</th><th>Porções</th><th>Total</th></tr>
-                </thead>
-                <tbody id="foodTableBody">
-                    <tr><td colspan="3">Selecione um usuário e uma categoria.</td></tr>
-                </tbody>
+                <thead><tr><th>Alimento</th><th>Porções</th><th>Total</th></tr></thead>
+                <tbody id="foodTableBody"><tr><td colspan="3">Selecione um usuário e uma categoria.</td></tr></tbody>
             </table>
         </div>
         <div class="calories-total">
@@ -304,19 +383,29 @@
         <button onclick="generateDailyReport()">Gerar relatório do dia (Baixar HTML)</button>
     </div>
 </div>
+</div>
+
 <script>
-// -------------------------------------
-// SEÇÃO 4: JAVASCRIPT
-// -------------------------------------
+// ============================
+// CONSTANTES E ESTADO GLOBAL
+// ============================
 const CALORIAS_POR_KG = 7700;
 const DIAS_NO_MES = 30;
 const USER_PREFIX = "userCadastro_";
 const DAILY_CONSUMPTION_PREFIX = "dailyConsumption_";
+const REGISTER_KEY = "dietaRegUser";
+const ADMIN_USERS_KEY = "adminUsers_dietaMonitorada";
+const TRIAL_HOURS = 10;
+
 let speaking = false;
 let currentUser = null;
 let dailyConsumption = {};
+let timerInterval = null;
+let authCheckInterval = null;
 
+// ============================
 // LISTA DE ALIMENTOS
+// ============================
 const foods = [
     { category: "Grãos e cereais", name: "Arroz branco (1 colher de sopa)", cal: 70 },
     { category: "Grãos e cereais", name: "Arroz integral (1 colher de sopa)", cal: 65 },
@@ -383,7 +472,7 @@ const foods = [
     { category: "Bebidas", name: "Farinha Láctea com leite (200ml)", cal: 160 },
     { category: "Bebidas", name: "Nestlé Nesquik com leite (200ml)", cal: 160 },
     { category: "Bebidas", name: "Suco de laranja (200ml)", cal: 90 },
-    { category: "Bebidas", name: "Chá sem açúcar (200ml)", cal: 2 },  
+    { category: "Bebidas", name: "Chá sem açúcar (200ml)", cal: 2 },
     { category: "Bebidas", name: "Café com açúcar (200ml)", cal: 40 },
     { category: "Bebidas", name: "Café sem açúcar (200ml)", cal: 2 },
     { category: "Bebidas", name: "Café com adoçante (200ml)", cal: 2 },
@@ -488,17 +577,272 @@ const foods = [
 ];
 const allFoodsMap = new Map(foods.map(f => [f.name, f]));
 
-// Funções utilitárias e de interface
+// ============================
+// SISTEMA DE AUTENTICAÇÃO
+// ============================
+function getAdminUsers() {
+    try { return JSON.parse(localStorage.getItem(ADMIN_USERS_KEY) || "[]"); } catch(e) { return []; }
+}
+function saveAdminUsers(users) {
+    localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(users));
+    try { localStorage.setItem('_adminUpdate', Date.now()); } catch(e){}
+}
+function getCurrentRegUser() {
+    try { return JSON.parse(localStorage.getItem(REGISTER_KEY) || "null"); } catch(e) { return null; }
+}
+
+function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('photoPreview');
+            const placeholder = document.getElementById('photoPlaceholder');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            placeholder.style.display = 'none';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function fazerCadastro() {
+    const nome = document.getElementById('regNome').value.trim();
+    const idade = document.getElementById('regIdade').value.trim();
+    const telefone = document.getElementById('regTelefone').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const aceito = document.getElementById('aceitoTermos').checked;
+    const photoInput = document.getElementById('photoInput');
+    if (!nome || !idade || !telefone || !email) { alert('Por favor, preencha todos os campos obrigatórios (*).'); return; }
+    if (!aceito) { alert('Você precisa aceitar os Termos de Uso para continuar.'); return; }
+    if (photoInput.files && photoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) { finalizarCadastro(nome, idade, telefone, email, e.target.result); };
+        reader.readAsDataURL(photoInput.files[0]);
+    } else {
+        finalizarCadastro(nome, idade, telefone, email, '');
+    }
+}
+
+function finalizarCadastro(nome, idade, telefone, email, foto) {
+    const agora = Date.now();
+    const adminUsers = getAdminUsers();
+    // Verifica se já existe um usuário com mesmo email/telefone na lista admin
+    const existeIndex = adminUsers.findIndex(u => u.email === email || u.telefone === telefone);
+
+    if (existeIndex >= 0) {
+        const adminUser = adminUsers[existeIndex];
+        // Usuário já existe — atualiza dados de foto/nome mas preserva status e pago
+        const userData = {
+            ...adminUser,
+            nome, idade, telefone, email, foto,
+            // Se pago/liberado, mantém expiraEm original (permanente); senão reseta trial
+            expiraEm: adminUser.pago ? 9999999999999 : agora + (TRIAL_HOURS * 3600000),
+            cadastradoEm: adminUser.cadastradoEm // preserva data original
+        };
+        adminUsers[existeIndex] = userData;
+        saveAdminUsers(adminUsers);
+        localStorage.setItem(REGISTER_KEY, JSON.stringify(userData));
+    } else {
+        // Usuário novo
+        const userData = {
+            id: 'user_' + agora,
+            nome, idade, telefone, email, foto,
+            cadastradoEm: agora,
+            expiraEm: agora + (TRIAL_HOURS * 3600000),
+            status: 'aguardando',
+            pago: false
+        };
+        adminUsers.push(userData);
+        saveAdminUsers(adminUsers);
+        localStorage.setItem(REGISTER_KEY, JSON.stringify(userData));
+    }
+
+    verificarAcesso();
+}
+
+function recadastrar() {
+    localStorage.removeItem(REGISTER_KEY);
+    clearInterval(timerInterval);
+    clearInterval(authCheckInterval);
+    document.getElementById('blockedOverlay').classList.add('hidden');
+    document.getElementById('waitingOverlay').classList.add('hidden');
+    document.getElementById('appMain').classList.add('hidden');
+    document.getElementById('userInfoBar').classList.add('hidden');
+    document.getElementById('timerBar').classList.add('hidden');
+    document.getElementById('regNome').value = '';
+    document.getElementById('regIdade').value = '';
+    document.getElementById('regTelefone').value = '';
+    document.getElementById('regEmail').value = '';
+    document.getElementById('aceitoTermos').checked = false;
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('photoPlaceholder').style.display = 'block';
+    document.getElementById('registerOverlay').classList.remove('hidden');
+}
+
+/**
+ * LÓGICA CENTRAL DE ACESSO:
+ * - pago=true OU status='liberado' → acesso permanente, sem timer
+ * - status='bloqueado' → bloqueado
+ * - status='aguardando' e dentro do prazo → trial com timer
+ * - expirou → bloqueado
+ */
+function verificarAcesso() {
+    const regUser = getCurrentRegUser();
+    if (!regUser) {
+        mostrarCadastro(); return;
+    }
+
+    // Sincroniza com admin (pode ter sido liberado/bloqueado pelo monitor)
+    const adminUsers = getAdminUsers();
+    const adminUser = adminUsers.find(u => u.id === regUser.id || u.email === regUser.email);
+
+    let statusAtual = regUser.status;
+    let pago = regUser.pago;
+    let expiraEm = regUser.expiraEm;
+
+    if (adminUser) {
+        statusAtual = adminUser.status;
+        pago = adminUser.pago;
+        expiraEm = adminUser.expiraEm;
+        // Atualiza o registro local com os dados mais recentes do admin
+        const atualizado = { ...regUser, status: statusAtual, pago, expiraEm };
+        localStorage.setItem(REGISTER_KEY, JSON.stringify(atualizado));
+    }
+
+    // LIBERADO PERMANENTE
+    if (pago || statusAtual === 'liberado') {
+        mostrarApp(regUser, false);
+        return;
+    }
+
+    // BLOQUEADO
+    if (statusAtual === 'bloqueado') {
+        mostrarBloqueado(); return;
+    }
+
+    // TRIAL — verifica expiração
+    const agora = Date.now();
+    if (agora > expiraEm) {
+        // Atualiza status para bloqueado no admin também
+        if (adminUser) {
+            adminUser.status = 'bloqueado';
+            saveAdminUsers(adminUsers);
+        }
+        mostrarBloqueado(); return;
+    }
+
+    // Trial ativo
+    mostrarApp(regUser, true, expiraEm);
+}
+
+function mostrarCadastro() {
+    document.getElementById('registerOverlay').classList.remove('hidden');
+    document.getElementById('blockedOverlay').classList.add('hidden');
+    document.getElementById('waitingOverlay').classList.add('hidden');
+    document.getElementById('appMain').classList.add('hidden');
+    document.getElementById('userInfoBar').classList.add('hidden');
+    document.getElementById('timerBar').classList.add('hidden');
+}
+
+function mostrarApp(regUser, showTimer, expiraEm) {
+    document.getElementById('registerOverlay').classList.add('hidden');
+    document.getElementById('blockedOverlay').classList.add('hidden');
+    document.getElementById('waitingOverlay').classList.add('hidden');
+    document.getElementById('appMain').classList.remove('hidden');
+    mostrarBarraUsuario(regUser, showTimer);
+    iniciarApp(regUser);
+    if (showTimer && expiraEm) {
+        iniciarTimer(expiraEm);
+    } else {
+        clearInterval(timerInterval);
+        document.getElementById('timerBar').classList.add('hidden');
+    }
+}
+
+function mostrarBloqueado() {
+    clearInterval(timerInterval);
+    document.getElementById('registerOverlay').classList.add('hidden');
+    document.getElementById('waitingOverlay').classList.add('hidden');
+    document.getElementById('appMain').classList.add('hidden');
+    document.getElementById('userInfoBar').classList.add('hidden');
+    document.getElementById('timerBar').classList.add('hidden');
+    document.getElementById('blockedOverlay').classList.remove('hidden');
+}
+
+function mostrarBarraUsuario(regUser, showTimer) {
+    const bar = document.getElementById('userInfoBar');
+    bar.classList.remove('hidden');
+    document.getElementById('infoNome').textContent = regUser.nome;
+    const fotoEl = document.getElementById('infoFoto');
+    if (regUser.foto) { fotoEl.src = regUser.foto; fotoEl.style.display = 'block'; }
+    else { fotoEl.style.display = 'none'; }
+    if (regUser.pago || regUser.status === 'liberado') {
+        document.getElementById('infoStatus').textContent = '✅ Plano Ativo — Acesso Permanente';
+        document.getElementById('infoStatus').className = 'user-status status-pago';
+    } else {
+        document.getElementById('infoStatus').textContent = '⏱️ Período de Teste';
+        document.getElementById('infoStatus').className = 'user-status status-trial';
+    }
+    if (showTimer) document.getElementById('timerBar').classList.remove('hidden');
+    else document.getElementById('timerBar').classList.add('hidden');
+}
+
+function iniciarTimer(expiraEm) {
+    clearInterval(timerInterval);
+    function atualizar() {
+        const restante = expiraEm - Date.now();
+        if (restante <= 0) { clearInterval(timerInterval); mostrarBloqueado(); return; }
+        const h = Math.floor(restante / 3600000);
+        const m = Math.floor((restante % 3600000) / 60000);
+        const s = Math.floor((restante % 60000) / 1000);
+        document.getElementById('timerCount').textContent =
+            String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+    atualizar();
+    timerInterval = setInterval(atualizar, 1000);
+}
+
+// Verificação periódica — detecta mudanças feitas no monitor
+function iniciarVerificacaoPeriodica() {
+    clearInterval(authCheckInterval);
+    authCheckInterval = setInterval(() => {
+        const regUser = getCurrentRegUser();
+        if (!regUser) return;
+        const adminUsers = getAdminUsers();
+        const adminUser = adminUsers.find(u => u.id === regUser.id || u.email === regUser.email);
+        if (!adminUser) return;
+        const statusMudou = adminUser.status !== regUser.status || adminUser.pago !== regUser.pago;
+        if (statusMudou) {
+            // Recarrega acesso com novo status
+            verificarAcesso();
+        }
+    }, 5000);
+}
+
+// Escuta mudanças de localStorage de outras abas (monitor na mesma máquina)
+window.addEventListener('storage', function(e) {
+    if (e.key === ADMIN_USERS_KEY || e.key === '_adminUpdate') {
+        verificarAcesso();
+    }
+});
+
+function iniciarApp(regUser) {
+    document.getElementById('nome').value = regUser.nome;
+    document.getElementById('idade').value = regUser.idade || '';
+    mostrarLista();
+    document.getElementById('controleSection').classList.remove('hidden');
+    iniciarVerificacaoPeriodica();
+}
+
+// ============================
+// FUNÇÕES DO APP DE DIETA
+// ============================
 function splitFoodName(name, cal) {
     const match = name.match(/^(.*?)(\s*\((.*?)\))?$/);
-    let foodName = name;
-    let portion = '';
-    if (match) {
-        foodName = match[1].trim();
-        portion = match[3] ? match[3].trim() : '';
-    }
+    let foodName = name, portion = '';
+    if (match) { foodName = match[1].trim(); portion = match[3] ? match[3].trim() : ''; }
     let portionLine = '';
-    if (portion) { portionLine = portion + ' '; }
+    if (portion) portionLine = portion + ' ';
     portionLine += cal + ' kcal';
     return { foodName, portionLine };
 }
@@ -508,73 +852,65 @@ function formatDateToBR(dateString) {
         const [year, month, day] = dateString.split('-');
         if (!day || !month || !year) return dateString;
         return `${day}/${month}/${year}`;
-    } catch (e) { return dateString; }
+    } catch(e) { return dateString; }
 }
 function getDuracaoText(value) {
     const select = document.getElementById("duracaoDieta");
     if (select) {
         for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === value.toString()) {
-                return select.options[i].text;
-            }
+            if (select.options[i].value === value.toString()) return select.options[i].text;
         }
     }
     return `${value} meses`;
 }
 function calcularDataFim(dataInicio, meses) {
     if (!dataInicio || !meses) return "";
-    const data = new Date(dataInicio + 'T00:00:00'); 
+    const data = new Date(dataInicio + 'T00:00:00');
     data.setMonth(data.getMonth() + Number(meses));
-    data.setDate(data.getDate() - 1); 
-    const day = String(data.getDate()).padStart(2, '0');
-    const month = String(data.getMonth() + 1).padStart(2, '0');
-    const year = data.getFullYear();
-    return `${year}-${month}-${day}`;
+    data.setDate(data.getDate() - 1);
+    const day = String(data.getDate()).padStart(2,'0');
+    const month = String(data.getMonth()+1).padStart(2,'0');
+    return `${data.getFullYear()}-${month}-${day}`;
 }
 function resetLoadButton() {
-    const loadButton = document.getElementById("loadUserButton");
-    loadButton.textContent = "Carregar Usuário";
-    loadButton.classList.remove("active");
-    gerarTabelaAlimentos();
+    const lb = document.getElementById("loadUserButton");
+    lb.textContent = "Carregar Usuário"; lb.classList.remove("active"); gerarTabelaAlimentos();
 }
 function resetAnalisarButton() {
-    const analisarButton = document.getElementById("analisarButton");
-    analisarButton.textContent = "Analisar peso ideal";
-    analisarButton.classList.remove("active");
+    const ab = document.getElementById("analisarButton");
+    ab.textContent = "Analisar peso ideal"; ab.classList.remove("active");
 }
 function saveUserCadastro() {
     const nome = document.getElementById("nome").value.trim();
-    if (!nome) { return; }
-    const duracaoDieta = document.getElementById("duracaoDieta").value || "6"; 
+    if (!nome) return;
     const userCadastro = {
-        nome: nome,
-        idade: document.getElementById("idade").value || "",
+        nome, idade: document.getElementById("idade").value || "",
         genero: document.getElementById("genero").value || "Feminino",
         altura: document.getElementById("altura").value || "",
         peso: document.getElementById("peso").value || "",
         dataInicio: document.getElementById("dataInicio").value || "",
-        duracaoDieta: duracaoDieta, 
+        duracaoDieta: document.getElementById("duracaoDieta").value || "6",
         tipoDieta: document.getElementById("tipoDieta").value || "Exata",
         exercicio: document.getElementById("exercicio").value || "0"
     };
-    try { localStorage.setItem(`${USER_PREFIX}${nome}`, JSON.stringify(userCadastro)); } catch (e) { console.error("Erro ao salvar cadastro", e); }
+    try { localStorage.setItem(`${USER_PREFIX}${nome}`, JSON.stringify(userCadastro)); } catch(e) {}
     resetAnalisarButton();
     mostrarLista(nome);
 }
 function loadUserCadastro(nome) {
     if (!nome) return;
     try {
-        const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
-        document.getElementById("nome").value = userCadastro.nome || "";
-        document.getElementById("idade").value = userCadastro.idade || "";
-        document.getElementById("genero").value = userCadastro.genero || "Feminino";
-        document.getElementById("altura").value = userCadastro.altura || "";
-        document.getElementById("peso").value = userCadastro.peso || "";
-        document.getElementById("dataInicio").value = userCadastro.dataInicio || "";
-        document.getElementById("duracaoDieta").value = userCadastro.duracaoDieta || "6";
-        document.getElementById("tipoDieta").value = userCadastro.tipoDieta || "Exata";
-        document.getElementById("exercicio").value = userCadastro.exercicio || "0";
-    } catch (e) { console.error("Erro ao carregar cadastro", e); }
+        const u = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
+        document.getElementById("nome").value = u.nome || "";
+        document.getElementById("idade").value = u.idade || "";
+        document.getElementById("genero").value = u.genero || "Feminino";
+        document.getElementById("altura").value = u.altura || "";
+        document.getElementById("peso").value = u.peso || "";
+        document.getElementById("dataInicio").value = u.dataInicio || "";
+        document.getElementById("duracaoDieta").value = u.duracaoDieta || "6";
+        document.getElementById("tipoDieta").value = u.tipoDieta || "Exata";
+        document.getElementById("exercicio").value = u.exercicio || "0";
+    } catch(e) {}
     analisar();
     document.getElementById("toggleCadastroButton").textContent = "Fechar Análise";
     document.getElementById("analisarButton").textContent = "Análise Atualizada";
@@ -584,62 +920,29 @@ function mostrarLista(nomeParaSelecionar = '') {
     const tabelaBody = document.querySelector("#tabelaNutri tbody");
     tabelaBody.innerHTML = '';
     const users = [];
-
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith(USER_PREFIX)) {
-            const user = JSON.parse(localStorage.getItem(key));
-            users.push(user);
+        if (key && key.startsWith(USER_PREFIX)) {
+            try { users.push(JSON.parse(localStorage.getItem(key))); } catch(e) {}
         }
     }
-    
-    users.sort((a, b) => a.nome.localeCompare(b.nome));
-
+    users.sort((a,b) => a.nome.localeCompare(b.nome));
     users.forEach(user => {
         const tr = document.createElement("tr");
         const { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta } = calcularResultados(user);
         const dataFim = calcularDataFim(user.dataInicio, user.duracaoDieta);
-
-        tr.innerHTML = `
-            <td>${user.nome}</td>
-            <td>${user.idade}</td>
-            <td>${user.genero}</td>
-            <td>${user.altura}</td>
-            <td>${user.peso}</td>
-            <td>${imc.toFixed(2)}</td>
-            <td>${pesoIdeal.toFixed(2)}</td>
-            <td>${kgEmagrecer.toFixed(2)}</td>
-            <td>${calDia.toFixed(0)}</td>
-            <td>${calMes.toFixed(0)}</td>
-            <td>${calTotalDieta.toFixed(0)}</td>
-            <td>${getDuracaoText(user.duracaoDieta)}</td>
-            <td>${user.tipoDieta}</td>
-            <td>${user.exercicio == "1" ? "Sim" : "Não"}</td>
-            <td>${formatDateToBR(user.dataInicio)}</td>
-            <td>${formatDateToBR(dataFim)}</td>
-        `;
-        tr.onclick = () => {
-            loadUserCadastro(user.nome);
-            document.querySelector('.main-container').scrollTop = 0;
-            document.body.scrollTop = 0;
-            document.documentElement.scrollTop = 0;
-        };
+        tr.innerHTML = `<td>${user.nome}</td><td>${user.idade}</td><td>${user.genero}</td><td>${user.altura}</td><td>${user.peso}</td><td>${imc.toFixed(2)}</td><td>${pesoIdeal.toFixed(2)}</td><td>${kgEmagrecer.toFixed(2)}</td><td>${calDia.toFixed(0)}</td><td>${calMes.toFixed(0)}</td><td>${calTotalDieta.toFixed(0)}</td><td>${getDuracaoText(user.duracaoDieta)}</td><td>${user.tipoDieta}</td><td>${user.exercicio=="1"?"Sim":"Não"}</td><td>${formatDateToBR(user.dataInicio)}</td><td>${formatDateToBR(dataFim)}</td>`;
+        tr.onclick = () => { loadUserCadastro(user.nome); window.scrollTo(0,0); };
         tabelaBody.appendChild(tr);
     });
-    
-    // Atualiza o select de usuários
     const userSelect = document.getElementById("userSelect");
     userSelect.innerHTML = '<option value="">Selecione um usuário</option>';
     users.forEach(user => {
         const option = document.createElement("option");
-        option.value = user.nome;
-        option.textContent = user.nome;
+        option.value = user.nome; option.textContent = user.nome;
         userSelect.appendChild(option);
-        if (user.nome === nomeParaSelecionar) {
-            userSelect.value = nomeParaSelecionar;
-        }
+        if (user.nome === nomeParaSelecionar) userSelect.value = nomeParaSelecionar;
     });
-
     document.getElementById("listaSection").classList.remove("hidden");
 }
 function calcularResultados(user) {
@@ -647,55 +950,24 @@ function calcularResultados(user) {
     const alturaM = Number(altura) / 100;
     const pesoN = Number(peso);
     const duracaoMeses = Number(duracaoDieta);
-    const exercicioN = Number(exercicio);
-
-    if (!alturaM || !pesoN || !duracaoMeses || !idade) {
-        return { imc: 0, pesoIdeal: 0, kgEmagrecer: 0, calDia: 0, calMes: 0, calTotalDieta: 0 };
-    }
-
+    if (!alturaM || !pesoN || !duracaoMeses || !idade) return { imc:0, pesoIdeal:0, kgEmagrecer:0, calDia:0, calMes:0, calTotalDieta:0 };
     const imc = pesoN / (alturaM * alturaM);
-
-    // Peso ideal (Fórmula de Lorentz)
     let pesoIdeal;
-    if (genero === "Masculino") {
-        pesoIdeal = alturaM * 100 - 100 - ((alturaM * 100 - 150) / 4);
-    } else { // Feminino
-        pesoIdeal = alturaM * 100 - 100 - ((alturaM * 100 - 150) / 2);
-    }
-
+    if (genero === "Masculino") pesoIdeal = alturaM*100 - 100 - ((alturaM*100-150)/4);
+    else pesoIdeal = alturaM*100 - 100 - ((alturaM*100-150)/2);
     const kgEmagrecer = pesoN - pesoIdeal;
-
-    // TMB (Taxa Metabólica Basal) - Harris-Benedict (simplificada)
     let tmb;
-    if (genero === "Masculino") {
-        tmb = 66 + (13.7 * pesoN) + (5 * (alturaM * 100)) - (6.8 * Number(idade));
-    } else { // Feminino
-        tmb = 655 + (9.6 * pesoN) + (1.8 * (alturaM * 100)) - (4.7 * Number(idade));
-    }
-
-    // Nível de atividade (sedentário a moderado)
-    const fatorAtividade = exercicioN === 1 ? 1.55 : 1.2;
+    if (genero === "Masculino") tmb = 66 + (13.7*pesoN) + (5*(alturaM*100)) - (6.8*Number(idade));
+    else tmb = 655 + (9.6*pesoN) + (1.8*(alturaM*100)) - (4.7*Number(idade));
+    const fatorAtividade = Number(exercicio) === 1 ? 1.55 : 1.2;
     const caloriasManutencao = tmb * fatorAtividade;
-
-    // Calorias a cortar para atingir o objetivo
     const semanas = duracaoMeses * 4;
     const corteCaloricoTotal = kgEmagrecer * CALORIAS_POR_KG;
     const corteCaloricoDiarioNecessario = corteCaloricoTotal / (semanas * 7);
-
     let calDiaBase = caloriasManutencao - corteCaloricoDiarioNecessario;
-
-    // Ajuste pelo Tipo de Dieta
-    if (tipoDieta === "Balanceada") {
-        calDiaBase *= 1.30; 
-    }
-    // Garante um mínimo razoável
+    if (tipoDieta === "Balanceada") calDiaBase *= 1.30;
     if (calDiaBase < 1000) calDiaBase = 1000;
-
-    const calDia = calDiaBase;
-    const calMes = calDia * DIAS_NO_MES;
-    const calTotalDieta = calDia * duracaoMeses * DIAS_NO_MES;
-
-    return { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta };
+    return { imc, pesoIdeal, kgEmagrecer, calDia: calDiaBase, calMes: calDiaBase*DIAS_NO_MES, calTotalDieta: calDiaBase*duracaoMeses*DIAS_NO_MES };
 }
 function analisar() {
     const nome = document.getElementById("nome").value.trim();
@@ -703,34 +975,11 @@ function analisar() {
     const altura = document.getElementById("altura").value;
     const peso = document.getElementById("peso").value;
     const dataInicio = document.getElementById("dataInicio").value;
-
-    if (!nome || !idade || !altura || !peso || !dataInicio) {
-        alert("Preencha todos os campos do cadastro para analisar.");
-        return;
-    }
-
-    const user = {
-        nome: nome,
-        idade: idade,
-        genero: document.getElementById("genero").value,
-        altura: altura,
-        peso: peso,
-        dataInicio: dataInicio,
-        duracaoDieta: document.getElementById("duracaoDieta").value,
-        tipoDieta: document.getElementById("tipoDieta").value,
-        exercicio: document.getElementById("exercicio").value
-    };
-
+    if (!nome||!idade||!altura||!peso||!dataInicio) { alert("Preencha todos os campos do cadastro para analisar."); return; }
+    const user = { nome, idade, genero: document.getElementById("genero").value, altura, peso, dataInicio, duracaoDieta: document.getElementById("duracaoDieta").value, tipoDieta: document.getElementById("tipoDieta").value, exercicio: document.getElementById("exercicio").value };
     const { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta } = calcularResultados(user);
-    const duracaoDieta = user.duracaoDieta;
-    const dataFim = calcularDataFim(dataInicio, duracaoDieta);
-    const dataFimBR = formatDateToBR(dataFim);
-
+    const dataFim = calcularDataFim(dataInicio, user.duracaoDieta);
     const { consumedMes, consumedDieta } = getConsumedTotals(nome, user);
-    const faltamMes = calMes - consumedMes;
-    const faltamDieta = calTotalDieta - consumedDieta;
-
-    // Exibir resultados
     document.getElementById("resNome").textContent = nome;
     document.getElementById("resGenero").textContent = user.genero;
     document.getElementById("resPeso").textContent = Number(peso).toFixed(1);
@@ -739,403 +988,205 @@ function analisar() {
     document.getElementById("resPesoIdeal").textContent = pesoIdeal.toFixed(1);
     document.getElementById("resKgEmagrecer").textContent = kgEmagrecer > 0 ? kgEmagrecer.toFixed(1) : "0.0";
     document.getElementById("resDataInicio").textContent = formatDateToBR(dataInicio);
-    document.getElementById("resDataFim").textContent = dataFimBR;
-    document.getElementById("resDuracao").textContent = getDuracaoText(duracaoDieta);
+    document.getElementById("resDataFim").textContent = formatDateToBR(dataFim);
+    document.getElementById("resDuracao").textContent = getDuracaoText(user.duracaoDieta);
     document.getElementById("resTipoDieta").textContent = user.tipoDieta;
     document.getElementById("resCalDia").textContent = calDia.toFixed(0);
     document.getElementById("resCalMes").textContent = calMes.toFixed(0);
     document.getElementById("resCalTotalDieta").textContent = calTotalDieta.toFixed(0);
-    document.getElementById("resFaltandoMes").textContent = faltamMes.toFixed(0);
-    document.getElementById("resFaltandoDieta").textContent = faltamDieta.toFixed(0);
-
+    document.getElementById("resFaltandoMes").textContent = (calMes - consumedMes).toFixed(0);
+    document.getElementById("resFaltandoDieta").textContent = (calTotalDieta - consumedDieta).toFixed(0);
     document.getElementById("resultadoSection").classList.remove("hidden");
     document.getElementById("controleSection").classList.remove("hidden");
-    
     document.getElementById("analisarButton").textContent = "Análise Atualizada";
     document.getElementById("analisarButton").classList.add("active");
-
     saveUserCadastro();
     carregarUsuarioControle(nome, calDia);
 }
 function salvarNutri() {
-    alert("Informações de " + document.getElementById("resNome").textContent + " salvas com sucesso na lista do nutricionista!");
+    alert("Informações de " + document.getElementById("resNome").textContent + " salvas com sucesso!");
     document.getElementById("analisarButton").textContent = "Analisar peso ideal";
     document.getElementById("analisarButton").classList.remove("active");
     mostrarLista(document.getElementById("resNome").textContent);
 }
 function carregarUsuario() {
-    const select = document.getElementById("userSelect");
-    const nome = select.value;
-    if (!nome) {
-        alert("Selecione um usuário para carregar o controle.");
-        return;
-    }
-    
+    const nome = document.getElementById("userSelect").value;
+    if (!nome) { alert("Selecione um usuário."); return; }
     try {
-        const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
-        if (!userCadastro.nome) throw new Error("Cadastro não encontrado.");
-        
-        const { calDia } = calcularResultados(userCadastro);
+        const u = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
+        if (!u.nome) throw new Error();
+        const { calDia } = calcularResultados(u);
         carregarUsuarioControle(nome, calDia);
-
-    } catch(e) {
-        alert("Erro ao carregar dados de cálculo do usuário. Verifique o cadastro.");
-        console.error(e);
-    }
+    } catch(e) { alert("Erro ao carregar dados do usuário."); }
 }
 function carregarUsuarioControle(nome, calDia) {
     currentUser = nome;
     document.getElementById("loadUserButton").textContent = `Usuário: ${nome}`;
     document.getElementById("loadUserButton").classList.add("active");
-    
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("consumptionDate").value = today;
     document.getElementById("caloriesLimit").value = calDia.toFixed(0);
-    
     carregarConsumoDoDia();
-    
     if (document.getElementById("categorySelect").options.length <= 1) {
         const categories = [...new Set(foods.map(f => f.category))].sort();
-        const categorySelect = document.getElementById("categorySelect");
-        categories.forEach(category => {
-            const option = document.createElement("option");
-            option.value = category;
-            option.textContent = category;
-            categorySelect.appendChild(option);
-        });
+        const cs = document.getElementById("categorySelect");
+        categories.forEach(cat => { const o = document.createElement("option"); o.value = cat; o.textContent = cat; cs.appendChild(o); });
     }
-    
     gerarTabelaAlimentos();
 }
 function carregarConsumoDoDia() {
     if (!currentUser) return;
     const date = document.getElementById("consumptionDate").value;
-    if (!date) {
-        dailyConsumption = {};
-        updateDailyTotal();
-        return;
-    }
-    
-    try {
-        const key = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${date}`;
-        dailyConsumption = JSON.parse(localStorage.getItem(key) || "{}");
-    } catch (e) {
-        console.error("Erro ao carregar consumo diário", e);
-        dailyConsumption = {};
-    }
-    
-    gerarTabelaAlimentos();
-    updateDailyTotal();
+    if (!date) { dailyConsumption = {}; updateDailyTotal(); return; }
+    try { dailyConsumption = JSON.parse(localStorage.getItem(`${DAILY_CONSUMPTION_PREFIX}${currentUser}_${date}`) || "{}"); } catch(e) { dailyConsumption = {}; }
+    gerarTabelaAlimentos(); updateDailyTotal();
 }
 function saveConsumoDoDia() {
     if (!currentUser) return;
     const date = document.getElementById("consumptionDate").value;
     if (!date) return;
-    
     const key = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${date}`;
-    try {
-        const toSave = {};
-        for (const [food, quantity] of Object.entries(dailyConsumption)) {
-            if (quantity > 0) {
-                toSave[food] = quantity;
-            }
-        }
-        if (Object.keys(toSave).length > 0) {
-            localStorage.setItem(key, JSON.stringify(toSave));
-        } else {
-            localStorage.removeItem(key); 
-        }
-    } catch (e) {
-        console.error("Erro ao salvar consumo diário", e);
-    }
+    const toSave = {};
+    for (const [food, qty] of Object.entries(dailyConsumption)) { if (qty > 0) toSave[food] = qty; }
+    if (Object.keys(toSave).length > 0) localStorage.setItem(key, JSON.stringify(toSave));
+    else localStorage.removeItem(key);
     updateDailyTotal();
 }
 function updateQuantity(foodName, delta) {
-    const currentQuantity = dailyConsumption[foodName] || 0;
-    let newQuantity = currentQuantity + delta;
-    
-    if (newQuantity < 0) newQuantity = 0;
-    
-    dailyConsumption[foodName] = newQuantity;
-    
-    const inputId = `qty_${foodName.replace(/[^a-zA-Z0-9]/g, '')}`;
-    const inputElement = document.getElementById(inputId);
-    if (inputElement) {
-        inputElement.value = newQuantity;
-    }
-    
+    const cur = dailyConsumption[foodName] || 0;
+    let nv = cur + delta;
+    if (nv < 0) nv = 0;
+    dailyConsumption[foodName] = nv;
+    const inputId = `qty_${foodName.replace(/[^a-zA-Z0-9]/g,'')}`;
+    const el = document.getElementById(inputId);
+    if (el) el.value = nv;
     saveConsumoDoDia();
-    gerarTabelaAlimentos(); 
+    gerarTabelaAlimentos();
 }
 function gerarTabelaAlimentos() {
     const category = document.getElementById("categorySelect").value;
     const tabelaBody = document.getElementById("foodTableBody");
     tabelaBody.innerHTML = '';
-    
-    if (!currentUser) {
-        tabelaBody.innerHTML = '<tr><td colspan="3">Selecione um usuário.</td></tr>';
-        return;
-    }
-
-    if (!category) {
-        tabelaBody.innerHTML = '<tr><td colspan="3">Selecione uma categoria.</td></tr>';
-        return;
-    }
-    
-    const filteredFoods = foods.filter(f => f.category === category);
-    
-    if (filteredFoods.length === 0) {
-        tabelaBody.innerHTML = '<tr><td colspan="3">Nenhum alimento encontrado nesta categoria.</td></tr>';
-        return;
-    }
-
-    filteredFoods.forEach(food => {
+    if (!currentUser) { tabelaBody.innerHTML = '<tr><td colspan="3">Selecione um usuário.</td></tr>'; return; }
+    if (!category) { tabelaBody.innerHTML = '<tr><td colspan="3">Selecione uma categoria.</td></tr>'; return; }
+    const ff = foods.filter(f => f.category === category);
+    if (ff.length === 0) { tabelaBody.innerHTML = '<tr><td colspan="3">Nenhum alimento encontrado.</td></tr>'; return; }
+    ff.forEach(food => {
         const tr = document.createElement("tr");
-        const quantity = dailyConsumption[food.name] || 0;
-        const totalCal = food.cal * quantity;
+        const qty = dailyConsumption[food.name] || 0;
+        const totalCal = food.cal * qty;
         const { foodName, portionLine } = splitFoodName(food.name, food.cal);
-        const inputId = `qty_${food.name.replace(/[^a-zA-Z0-9]/g, '')}`;
-
-        tr.innerHTML = `
-            <td>
-                <div class="food-item-container">
-                    <span class="food-name-line">${foodName}</span>
-                    <span class="calorias-base-unidade">${portionLine}</span>
-                </div>
-            </td>
-            <td>
-                <div class="contador-quantidade">
-                    <button onclick="updateQuantity('${food.name.replace(/'/g, "\\'")}', -1)">-</button>
-                    <input type="number" id="${inputId}" class="quantidade-input" value="${quantity}" min="0" onchange="manualUpdateQuantity('${food.name.replace(/'/g, "\\'")}', this.value)">
-                    <button onclick="updateQuantity('${food.name.replace(/'/g, "\\'")}', 1)">+</button>
-                </div>
-            </td>
-            <td>${totalCal} kcal</td>
-        `;
+        const inputId = `qty_${food.name.replace(/[^a-zA-Z0-9]/g,'')}`;
+        const safeName = food.name.replace(/'/g,"\\'");
+        tr.innerHTML = `<td><div class="food-item-container"><span class="food-name-line">${foodName}</span><span class="calorias-base-unidade">${portionLine}</span></div></td><td><div class="contador-quantidade"><button onclick="updateQuantity('${safeName}',-1)">-</button><input type="number" id="${inputId}" class="quantidade-input" value="${qty}" min="0" onchange="manualUpdateQuantity('${safeName}',this.value)"><button onclick="updateQuantity('${safeName}',1)">+</button></div></td><td>${totalCal} kcal</td>`;
         tabelaBody.appendChild(tr);
     });
 }
 function manualUpdateQuantity(foodName, value) {
-    const newQuantity = Number(value);
-    if (isNaN(newQuantity) || newQuantity < 0) {
-        dailyConsumption[foodName] = 0;
-    } else {
-        dailyConsumption[foodName] = newQuantity;
-    }
-    saveConsumoDoDia();
-    gerarTabelaAlimentos(); 
+    const nv = Number(value);
+    dailyConsumption[foodName] = (isNaN(nv)||nv<0) ? 0 : nv;
+    saveConsumoDoDia(); gerarTabelaAlimentos();
 }
 function getConsumedTotals(nome, user) {
-    let consumedDieta = 0;
-    let consumedMes = 0;
-    const today = new Date().toISOString().split('T')[0]; 
-
+    let consumedDieta = 0, consumedMes = 0;
+    const today = new Date().toISOString().split('T')[0];
+    const prefix = `${DAILY_CONSUMPTION_PREFIX}${nome}_`;
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith(`${DAILY_CONSUMPTION_PREFIX}${nome}_`)) {
+        if (key && key.startsWith(prefix)) {
             try {
                 const consumption = JSON.parse(localStorage.getItem(key));
                 let dailyTotal = 0;
-                for (const [foodName, quantity] of Object.entries(consumption)) {
+                for (const [foodName, qty] of Object.entries(consumption)) {
                     const food = allFoodsMap.get(foodName);
-                    if (food) {
-                        dailyTotal += food.cal * quantity;
-                    }
+                    if (food) dailyTotal += food.cal * qty;
                 }
                 consumedDieta += dailyTotal;
-
-                const consumptionDateStr = key.substring((`${DAILY_CONSUMPTION_PREFIX}${nome}_`).length);
-                const currentMonth = today.substring(0, 7); 
-                const consumptionMonth = consumptionDateStr.substring(0, 7); 
-
-                if (currentMonth === consumptionMonth) {
-                    consumedMes += dailyTotal;
-                }
-
-            } catch (e) {
-                console.error("Erro ao processar consumo salvo:", e);
-            }
+                const dateStr = key.substring(prefix.length);
+                if (today.substring(0,7) === dateStr.substring(0,7)) consumedMes += dailyTotal;
+            } catch(e) {}
         }
     }
     return { consumedMes, consumedDieta };
 }
 function updateDailyTotal() {
     if (!currentUser) return;
-    
-    // 1. Total do Dia
     let totalCalories = 0;
-    for (const [foodName, quantity] of Object.entries(dailyConsumption)) {
-        const food = allFoodsMap.get(foodName);
-        if (food) {
-            totalCalories += food.cal * quantity;
-        }
+    for (const [fn, qty] of Object.entries(dailyConsumption)) {
+        const food = allFoodsMap.get(fn);
+        if (food) totalCalories += food.cal * qty;
     }
     document.getElementById("totalCalories").textContent = totalCalories.toFixed(0);
-    
-    // 2. Limites e Restantes
     const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${currentUser}`) || "{}");
-    const { calDia, calMes, calTotalDieta } = calcularResultados(userCadastro);
+    const { calMes, calTotalDieta } = calcularResultados(userCadastro);
     const { consumedMes, consumedDieta } = getConsumedTotals(currentUser, userCadastro);
-
-    let consumedDayRecalculated = 0;
-    for (const [foodName, quantity] of Object.entries(dailyConsumption)) {
-        const food = allFoodsMap.get(foodName);
-        if (food) {
-            consumedDayRecalculated += food.cal * quantity;
-        }
-    }
-    
     const currentDayKey = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${document.getElementById("consumptionDate").value}`;
-    let consumedMesExcludingToday = consumedMes;
-    let consumedDietaExcludingToday = consumedDieta;
-    
-    const savedConsumptionToday = JSON.parse(localStorage.getItem(currentDayKey) || "{}");
+    const savedToday = JSON.parse(localStorage.getItem(currentDayKey) || "{}");
     let savedTotalToday = 0;
-    for (const [foodName, quantity] of Object.entries(savedConsumptionToday)) {
-        const food = allFoodsMap.get(foodName);
-        if (food) {
-            savedTotalToday += food.cal * quantity;
-        }
+    for (const [fn, qty] of Object.entries(savedToday)) {
+        const food = allFoodsMap.get(fn);
+        if (food) savedTotalToday += food.cal * qty;
     }
-    
-    consumedMesExcludingToday -= savedTotalToday;
-    consumedDietaExcludingToday -= savedTotalToday;
-    
-    const remainingMes = calMes - (consumedMesExcludingToday + consumedDayRecalculated);
-    const remainingDieta = calTotalDieta - (consumedDietaExcludingToday + consumedDayRecalculated);
-    
-    document.getElementById("remainingCalories").textContent = remainingMes.toFixed(0);
-    document.getElementById("remainingTotalDieta").textContent = remainingDieta.toFixed(0);
-
-    // 3. Alerta de Áudio 
+    document.getElementById("remainingCalories").textContent = (calMes - (consumedMes - savedTotalToday + totalCalories)).toFixed(0);
+    document.getElementById("remainingTotalDieta").textContent = (calTotalDieta - (consumedDieta - savedTotalToday + totalCalories)).toFixed(0);
     const calLimit = Number(document.getElementById("caloriesLimit").value);
-    if (totalCalories > calLimit && !speaking) {
-        falarAlerta(currentUser);
-    }
+    if (totalCalories > calLimit && !speaking) falarAlerta(currentUser);
 }
 function falarAlerta(nomeUsuario) {
     if ('speechSynthesis' in window) {
         speaking = true;
-        const synth = window.speechSynthesis;
-        const mensagem = `${nomeUsuario}, você já atingiu suas calorias de hoje, preste mais atenção.`;
-        const utterance = new SpeechSynthesisUtterance(mensagem);
+        const utterance = new SpeechSynthesisUtterance(`${nomeUsuario}, você já atingiu suas calorias de hoje, preste mais atenção.`);
         utterance.lang = 'pt-BR';
         utterance.onend = () => { speaking = false; };
-        synth.speak(utterance);
+        window.speechSynthesis.speak(utterance);
     }
 }
 function generateDailyReport() {
-    if (!currentUser) {
-        alert("Selecione um usuário primeiro.");
-        return;
-    }
+    if (!currentUser) { alert("Selecione um usuário primeiro."); return; }
     const date = document.getElementById("consumptionDate").value;
-    if (!date) {
-        alert("Selecione uma data.");
-        return;
-    }
-    
+    if (!date) { alert("Selecione uma data."); return; }
     const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${currentUser}`) || "{}");
     const { calDia } = calcularResultados(userCadastro);
-    
     const consumedItems = [];
     let totalCalories = 0;
-    for (const [foodName, quantity] of Object.entries(dailyConsumption)) {
-        if (quantity > 0) {
-            const food = allFoodsMap.get(foodName);
-            const calTotal = food.cal * quantity;
-            consumedItems.push({ foodName, quantity, calTotal });
-            totalCalories += calTotal;
+    for (const [fn, qty] of Object.entries(dailyConsumption)) {
+        if (qty > 0) {
+            const food = allFoodsMap.get(fn);
+            if (food) { const ct = food.cal * qty; consumedItems.push({ foodName: fn, quantity: qty, calTotal: ct }); totalCalories += ct; }
         }
     }
-    
-    const reportCss = document.querySelector('style').textContent.match(/\/\* SEÇÃO 3: CSS do Relatório Diário \*\/(.|\n)*$/)[0];
-
-    const reportHTML = `
-        <!DOCTYPE html>
-        <html lang="pt-BR">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Relatório Diário de Consumo</title>
-            <style>
-                ${reportCss}
-            </style>
-        </head>
-        <body class="report-body">
-            <h1>Relatório Diário de Consumo</h1>
-            <h2>👤 Usuário: ${currentUser}</h2>
-            <p>🗓️ Data: <b>${formatDateToBR(date)}</b></p>
-            <p>🎯 Limite Calórico Diário: <b>${calDia.toFixed(0)} kcal</b></p>
-            
-            <h2>🍽️ Alimentos Consumidos</h2>
-            <ul>
-                ${consumedItems.map(item => `
-                    <li>
-                        ${item.foodName} &times; ${item.quantity} porção(ões) 
-                        (Total: <b>${item.calTotal} kcal</b>)
-                    </li>
-                `).join('')}
-                ${consumedItems.length === 0 ? '<li>Nenhum alimento registrado para este dia.</li>' : ''}
-            </ul>
-            
-            <div class="cal-summary">
-                Total Consumido no Dia: ${totalCalories.toFixed(0)} kcal
-            </div>
-            
-            <p style="margin-top: 2rem;">Status: ${totalCalories > calDia ? 
-                `<b style="color:#ff4d4d;">Limite excedido em ${(totalCalories - calDia).toFixed(0)} kcal!</b>` : 
-                `<b style="color:#4dff4d;">Dentro do limite. Restam ${(calDia - totalCalories).toFixed(0)} kcal.</b>`}</p>
-        </body>
-        </html>
-    `;
-    
+    const reportHTML = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório Diário</title><style>body{font-family:Arial,sans-serif;background:#000;color:#fff;padding:30px}h1{color:#f40000;border-bottom:4px solid #f40000;padding-bottom:1rem;font-size:2rem}h2{color:#fff;border-bottom:2px solid #555}p,li{font-size:1.2rem;margin:0.5rem 0}b{color:#1400ff}ul{list-style:none;padding:0}li{border-bottom:1px dotted #555;padding:0.5rem 0}.cal-summary{font-size:2rem;color:#f40000;font-weight:bold;border:4px solid #f40000;padding:1rem;text-align:center;margin-top:2rem}</style></head><body><h1>Relatório Diário de Consumo</h1><h2>👤 ${currentUser}</h2><p>🗓️ Data: <b>${formatDateToBR(date)}</b></p><p>🎯 Limite: <b>${calDia.toFixed(0)} kcal</b></p><h2>🍽️ Alimentos</h2><ul>${consumedItems.map(i=>`<li>${i.foodName} × ${i.quantity} = <b>${i.calTotal} kcal</b></li>`).join('')}${consumedItems.length===0?'<li>Nenhum alimento registrado.</li>':''}</ul><div class="cal-summary">Total: ${totalCalories.toFixed(0)} kcal</div><p style="margin-top:1rem">${totalCalories>calDia?`<b style="color:#ff4d4d">Limite excedido em ${(totalCalories-calDia).toFixed(0)} kcal!</b>`:`<b style="color:#4dff4d">Dentro do limite. Restam ${(calDia-totalCalories).toFixed(0)} kcal.</b>`}</p></body></html>`;
     const blob = new Blob([reportHTML], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `Relatorio_Diario_${currentUser}_${date}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = `Relatorio_${currentUser}_${date}.html`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-
 function abrirAnalise(fechar) {
-    const cadastroSection = document.getElementById("cadastroSection");
-    const resultadoSection = document.getElementById("resultadoSection");
-    const controleSection = document.getElementById("controleSection");
-    const listaSection = document.getElementById("listaSection");
-    const toggleButton = document.getElementById("toggleCadastroButton");
-
+    const cs = document.getElementById("cadastroSection");
+    const rs = document.getElementById("resultadoSection");
+    const ctrl = document.getElementById("controleSection");
+    const ls = document.getElementById("listaSection");
+    const tb = document.getElementById("toggleCadastroButton");
     if (fechar) {
-        cadastroSection.classList.add("hidden");
-        resultadoSection.classList.add("hidden");
-        controleSection.classList.remove("hidden");
-        listaSection.classList.remove("hidden");
-        toggleButton.textContent = "Abrir Análise";
-        toggleButton.onclick = () => abrirAnalise(false);
+        cs.classList.add("hidden"); rs.classList.add("hidden");
+        ctrl.classList.remove("hidden"); ls.classList.remove("hidden");
+        tb.textContent = "Abrir Análise"; tb.onclick = () => abrirAnalise(false);
     } else {
-        cadastroSection.classList.remove("hidden");
-        resultadoSection.classList.add("hidden");
-        controleSection.classList.add("hidden");
-        listaSection.classList.add("hidden");
-        toggleButton.textContent = "Fechar Análise";
-        toggleButton.onclick = () => abrirAnalise(true);
-        
-        const nomeInput = document.getElementById("nome");
-        if (nomeInput.value.trim() && localStorage.getItem(`${USER_PREFIX}${nomeInput.value.trim()}`)) {
-            loadUserCadastro(nomeInput.value.trim());
-        }
+        cs.classList.remove("hidden"); rs.classList.add("hidden");
+        ctrl.classList.add("hidden"); ls.classList.add("hidden");
+        tb.textContent = "Fechar Análise"; tb.onclick = () => abrirAnalise(true);
+        const ni = document.getElementById("nome");
+        if (ni.value.trim() && localStorage.getItem(`${USER_PREFIX}${ni.value.trim()}`)) loadUserCadastro(ni.value.trim());
     }
 }
 
-// Inicializa a página diretamente sem verificação de senha
+// ============================
+// INICIALIZAÇÃO
+// ============================
 window.onload = function() {
-    mostrarLista();
-    document.getElementById("controleSection").classList.remove("hidden");
+    verificarAcesso();
 };
-
 </script>
 </body>
 </html>
