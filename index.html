@@ -90,6 +90,39 @@
         #foodTableBody td:nth-child(1) { text-align: left; }
 
         /* ------------------------------------- */
+        /* CORREÇÃO MOBILE: Tabela de Alimentos  */
+        /* Permite que o nome/calorias não sejam */
+        /* cortados na tela do celular           */
+        /* ------------------------------------- */
+        #controleSection table { table-layout: fixed; width: 100%; }
+        #controleSection table th:nth-child(1),
+        #controleSection table td:nth-child(1) {
+            width: 45%;
+            white-space: normal;
+            word-break: break-word;
+        }
+        #controleSection table th:nth-child(2),
+        #controleSection table td:nth-child(2) {
+            width: 35%;
+            white-space: nowrap;
+        }
+        #controleSection table th:nth-child(3),
+        #controleSection table td:nth-child(3) {
+            width: 20%;
+            white-space: normal;
+            word-break: break-word;
+        }
+        #controleSection .food-name-line {
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        #controleSection .calorias-base-unidade {
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        /* ------------------------------------- */
         /* SEÇÃO 2: CSS de Impressão */
         /* ------------------------------------- */
         @media print {
