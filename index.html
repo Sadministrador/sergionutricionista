@@ -189,7 +189,9 @@
         <div id="formCadastrar" class="hidden">
             <input type="text" id="cadNome" placeholder="Seu nome completo">
             <input type="tel" id="cadTelefone" placeholder="Telefone (DDD + número)" maxlength="20">
-            <input type="email" id="cadEmail" placeholder="E-mail (opcional)">
+            <input type="email" id="cadEmail" placeholder="E-mail">
+            <input type="file" id="cadFoto" accept="image/*" style="display:none" onchange="if(this.files[0]) { document.getElementById('btnUploadFoto').textContent = '✅ Foto Selecionada'; document.getElementById('btnUploadFoto').style.backgroundColor = '#00e676'; }">
+            <button type="button" id="btnUploadFoto" onclick="document.getElementById('cadFoto').click()" style="background-color: #f40000; margin-top: 1.5rem;">Upload de Foto</button>
             <input type="number" id="cadIdade" placeholder="Idade" min="1" max="120">
             <button onclick="cadastrar()" style="margin-top:1.5rem;">Criar conta (teste 8h)</button>
         </div>
@@ -473,8 +475,9 @@ async function cadastrar() {
     const tel = document.getElementById('cadTelefone').value.trim().replace(/\D/g, '');
     const email = document.getElementById('cadEmail').value.trim();
     const idade = document.getElementById('cadIdade').value.trim();
+    const fotoFile = document.getElementById('cadFoto').files[0];
 
-    if (!nome || !tel) { showLoginMsg('Nome e telefone são obrigatórios.', 'trial'); return; }
+    if (!nome || !tel || !email) { showLoginMsg('Nome, telefone e e-mail são obrigatórios.', 'trial'); return; }
 
     const key = sanitizeKey(tel);
     const existSnap = await db.ref('adminUsers/' + key).get();
@@ -483,12 +486,22 @@ async function cadastrar() {
         return;
     }
 
+    let fotoBase64 = "";
+    if (fotoFile) {
+        fotoBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(fotoFile);
+        });
+    }
+
     const userData = {
         id: tel,
         nome,
         telefone: tel,
-        email: email || '',
+        email: email,
         idade: idade || '',
+        foto: fotoBase64,
         status: 'aguardando',
         pago: false,
         cadastradoEm: Date.now(),
