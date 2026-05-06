@@ -7,6 +7,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
     <title>Dieta Monitorada</title>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --primary: #f40000;
@@ -222,12 +226,32 @@
         .status-trial { color: #FFD700 !important; }
         #userInfoBar button { margin-left: auto; margin-top: 0; padding: 0.4rem 1rem; font-size: 0.8rem; min-height: auto; background: #222; border: 1px solid #444; border-radius: 0.5rem; }
         #userInfoBar button:hover { background: #333; }
+
+        /* Loading */
+        #loadingOverlay {
+            position: fixed; inset: 0; background: #000; z-index: 99999;
+            display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem;
+        }
+        #loadingOverlay.hidden { display: none !important; }
+        .loading-spinner {
+            width: 50px; height: 50px; border: 5px solid #333;
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: #aaa; font-size: 1rem; }
     </style>
 </head>
 <body>
 
+<!-- ===== LOADING ===== -->
+<div id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Conectando ao Firebase...</div>
+</div>
+
 <!-- ===== OVERLAY: CADASTRO ===== -->
-<div id="registerOverlay">
+<div id="registerOverlay" class="hidden">
     <div class="reg-box">
         <h2>🥗 Dieta Monitorada</h2>
         <p class="reg-subtitle">Cadastre-se para começar seu teste gratuito</p>
@@ -269,6 +293,9 @@
             </label>
         </div>
         <button id="btnRegister" onclick="fazerCadastro()">🚀 Começar Teste Gratuito</button>
+        <p style="text-align:center;margin-top:1rem;font-size:0.8rem;color:#666">
+            Já tem cadastro? Preencha com o mesmo e-mail para acessar direto.
+        </p>
     </div>
 </div>
 
@@ -387,21 +414,36 @@
 
 <script>
 // ============================
+// FIREBASE CONFIG
+// ============================
+const firebaseConfig = {
+    apiKey: "AIzaSyCEAFNYezHe0_qsk-0ob4ibcEglUEP_KH0",
+    authDomain: "dieta-monitorada-b9500.firebaseapp.com",
+    databaseURL: "https://dieta-monitorada-b9500-default-rtdb.firebaseio.com",
+    projectId: "dieta-monitorada-b9500",
+    storageBucket: "dieta-monitorada-b9500.firebasestorage.app",
+    messagingSenderId: "515092760726",
+    appId: "1:515092760726:web:cf0f62f5879d2a9dc35ab7",
+    measurementId: "G-9E3GJYQGHK"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============================
 // CONSTANTES E ESTADO GLOBAL
 // ============================
 const CALORIAS_POR_KG = 7700;
 const DIAS_NO_MES = 30;
-const USER_PREFIX = "userCadastro_";
-const DAILY_CONSUMPTION_PREFIX = "dailyConsumption_";
-const REGISTER_KEY = "dietaRegUser";
-const ADMIN_USERS_KEY = "adminUsers_dietaMonitorada";
 const TRIAL_HOURS = 10;
+const REGISTER_KEY = "dietaRegUserId";
 
 let speaking = false;
 let currentUser = null;
 let dailyConsumption = {};
 let timerInterval = null;
-let authCheckInterval = null;
+let adminUserListener = null;
+let allUsersCache = {};
 
 // ============================
 // LISTA DE ALIMENTOS
@@ -578,17 +620,115 @@ const foods = [
 const allFoodsMap = new Map(foods.map(f => [f.name, f]));
 
 // ============================
+// FIREBASE — FUNÇÕES AUXILIARES
+// ============================
+function sanitizeKey(str) {
+    return str.replace(/[.#$/\[\]]/g, '_');
+}
+
+async function fbSalvarAdminUser(userData) {
+    const key = sanitizeKey(userData.id);
+    await db.ref('adminUsers/' + key).set(userData);
+}
+
+async function fbBuscarAdminUserPorId(id) {
+    const key = sanitizeKey(id);
+    const snap = await db.ref('adminUsers/' + key).get();
+    return snap.exists() ? snap.val() : null;
+}
+
+async function fbBuscarAdminUserPorEmailOuTelefone(email, telefone) {
+    const snap = await db.ref('adminUsers').get();
+    if (!snap.exists()) return null;
+    const users = snap.val();
+    for (const key in users) {
+        const u = users[key];
+        if (u.email === email || u.telefone === telefone) return u;
+    }
+    return null;
+}
+
+async function fbSalvarUsuario(nome, dados) {
+    const key = sanitizeKey(nome);
+    await db.ref('usuarios/' + key).set(dados);
+}
+
+async function fbBuscarUsuario(nome) {
+    const key = sanitizeKey(nome);
+    const snap = await db.ref('usuarios/' + key).get();
+    return snap.exists() ? snap.val() : null;
+}
+
+async function fbListarUsuarios() {
+    const snap = await db.ref('usuarios').get();
+    if (!snap.exists()) return [];
+    const obj = snap.val();
+    return Object.values(obj).filter(u => u && u.nome);
+}
+
+async function fbSalvarConsumo(nome, data, consumo) {
+    const keyNome = sanitizeKey(nome);
+    const keyData = sanitizeKey(data);
+    const toSave = {};
+    for (const [food, qty] of Object.entries(consumo)) {
+        if (qty > 0) toSave[sanitizeKey(food)] = { originalName: food, qty };
+    }
+    if (Object.keys(toSave).length > 0) {
+        await db.ref(`consumoDiario/${keyNome}/${keyData}`).set(toSave);
+    } else {
+        await db.ref(`consumoDiario/${keyNome}/${keyData}`).remove();
+    }
+}
+
+async function fbCarregarConsumo(nome, data) {
+    const keyNome = sanitizeKey(nome);
+    const keyData = sanitizeKey(data);
+    const snap = await db.ref(`consumoDiario/${keyNome}/${keyData}`).get();
+    if (!snap.exists()) return {};
+    const raw = snap.val();
+    const result = {};
+    for (const key in raw) {
+        const item = raw[key];
+        if (item && item.originalName) result[item.originalName] = item.qty;
+    }
+    return result;
+}
+
+async function fbGetConsumedTotals(nome, user) {
+    const keyNome = sanitizeKey(nome);
+    const snap = await db.ref(`consumoDiario/${keyNome}`).get();
+    if (!snap.exists()) return { consumedMes: 0, consumedDieta: 0 };
+    const today = new Date().toISOString().split('T')[0];
+    const mesAtual = today.substring(0, 7);
+    let consumedDieta = 0, consumedMes = 0;
+    const allDays = snap.val();
+    for (const dayKey in allDays) {
+        const dayData = allDays[dayKey];
+        let dailyTotal = 0;
+        for (const foodKey in dayData) {
+            const item = dayData[foodKey];
+            if (item && item.originalName) {
+                const food = allFoodsMap.get(item.originalName);
+                if (food) dailyTotal += food.cal * item.qty;
+            }
+        }
+        consumedDieta += dailyTotal;
+        const dataOriginal = dayKey.replace(/_/g, '-');
+        if (dataOriginal.substring(0, 7) === mesAtual) consumedMes += dailyTotal;
+    }
+    return { consumedMes, consumedDieta };
+}
+
+// ============================
 // SISTEMA DE AUTENTICAÇÃO
 // ============================
-function getAdminUsers() {
-    try { return JSON.parse(localStorage.getItem(ADMIN_USERS_KEY) || "[]"); } catch(e) { return []; }
+function getCurrentRegUserId() {
+    return localStorage.getItem(REGISTER_KEY) || null;
 }
-function saveAdminUsers(users) {
-    localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(users));
-    try { localStorage.setItem('_adminUpdate', Date.now()); } catch(e){}
-}
-function getCurrentRegUser() {
-    try { return JSON.parse(localStorage.getItem(REGISTER_KEY) || "null"); } catch(e) { return null; }
+
+function estaLiberado(adminUser) {
+    // Retorna true se o usuário tem acesso liberado (pago ou status liberado pelo admin)
+    return adminUser && (adminUser.pago === true || adminUser.status === 'liberado');
 }
 
 function previewPhoto(input) {
@@ -605,7 +745,7 @@ function previewPhoto(input) {
     }
 }
 
-function fazerCadastro() {
+async function fazerCadastro() {
     const nome = document.getElementById('regNome').value.trim();
     const idade = document.getElementById('regIdade').value.trim();
     const telefone = document.getElementById('regTelefone').value.trim();
@@ -614,61 +754,106 @@ function fazerCadastro() {
     const photoInput = document.getElementById('photoInput');
     if (!nome || !idade || !telefone || !email) { alert('Por favor, preencha todos os campos obrigatórios (*).'); return; }
     if (!aceito) { alert('Você precisa aceitar os Termos de Uso para continuar.'); return; }
+
+    document.getElementById('btnRegister').disabled = true;
+    document.getElementById('btnRegister').textContent = 'Cadastrando...';
+
     if (photoInput.files && photoInput.files[0]) {
         const reader = new FileReader();
-        reader.onload = function(e) { finalizarCadastro(nome, idade, telefone, email, e.target.result); };
+        reader.onload = async function(e) { await finalizarCadastro(nome, idade, telefone, email, e.target.result); };
         reader.readAsDataURL(photoInput.files[0]);
     } else {
-        finalizarCadastro(nome, idade, telefone, email, '');
+        await finalizarCadastro(nome, idade, telefone, email, '');
     }
 }
 
-function finalizarCadastro(nome, idade, telefone, email, foto) {
-    const agora = Date.now();
-    const adminUsers = getAdminUsers();
-    // Verifica se já existe um usuário com mesmo email/telefone na lista admin
-    const existeIndex = adminUsers.findIndex(u => u.email === email || u.telefone === telefone);
+async function finalizarCadastro(nome, idade, telefone, email, foto) {
+    try {
+        const agora = Date.now();
 
-    if (existeIndex >= 0) {
-        const adminUser = adminUsers[existeIndex];
-        // Usuário já existe — atualiza dados de foto/nome mas preserva status e pago
-        const userData = {
-            ...adminUser,
-            nome, idade, telefone, email, foto,
-            // Se pago/liberado, mantém expiraEm original (permanente); senão reseta trial
-            expiraEm: adminUser.pago ? 9999999999999 : agora + (TRIAL_HOURS * 3600000),
-            cadastradoEm: adminUser.cadastradoEm // preserva data original
-        };
-        adminUsers[existeIndex] = userData;
-        saveAdminUsers(adminUsers);
-        localStorage.setItem(REGISTER_KEY, JSON.stringify(userData));
-    } else {
-        // Usuário novo
-        const userData = {
-            id: 'user_' + agora,
-            nome, idade, telefone, email, foto,
-            cadastradoEm: agora,
-            expiraEm: agora + (TRIAL_HOURS * 3600000),
-            status: 'aguardando',
-            pago: false
-        };
-        adminUsers.push(userData);
-        saveAdminUsers(adminUsers);
-        localStorage.setItem(REGISTER_KEY, JSON.stringify(userData));
+        // ── PASSO 1: Busca usuário existente por email OU telefone ──
+        const existente = await fbBuscarAdminUserPorEmailOuTelefone(email, telefone);
+
+        let userData;
+
+        if (existente) {
+            // ── USUÁRIO JÁ EXISTE NO FIREBASE ──
+
+            if (estaLiberado(existente)) {
+                // ✅ LIBERADO: apenas vincula o ID no localStorage e entra direto
+                // NÃO salva nada no Firebase — preserva tudo como está
+                localStorage.setItem(REGISTER_KEY, existente.id);
+                await verificarAcesso();
+                return; // sai sem sobrescrever nada
+            }
+
+            if (existente.status === 'bloqueado') {
+                // 🔒 BLOQUEADO: novo trial do zero
+                userData = {
+                    ...existente,
+                    nome,
+                    idade,
+                    telefone,
+                    email,
+                    foto: foto || existente.foto,
+                    status: 'aguardando',
+                    pago: false,
+                    expiraEm: agora + (TRIAL_HOURS * 3600000)
+                };
+            } else {
+                // ⏳ AGUARDANDO / trial ativo: atualiza dados pessoais, preserva timer
+                userData = {
+                    ...existente,          // preserva id, cadastradoEm, expiraEm, status, pago
+                    nome,
+                    idade,
+                    telefone,
+                    email,
+                    foto: foto || existente.foto
+                };
+            }
+
+        } else {
+            // ── USUÁRIO NOVO ──
+            userData = {
+                id: 'user_' + agora,
+                nome,
+                idade,
+                telefone,
+                email,
+                foto,
+                cadastradoEm: agora,
+                expiraEm: agora + (TRIAL_HOURS * 3600000),
+                status: 'aguardando',
+                pago: false
+            };
+        }
+
+        await fbSalvarAdminUser(userData);
+        localStorage.setItem(REGISTER_KEY, userData.id);
+        await verificarAcesso();
+
+    } catch(e) {
+        console.error('Erro no cadastro:', e);
+        alert('Erro ao cadastrar. Verifique sua conexão e tente novamente.');
+        document.getElementById('btnRegister').disabled = false;
+        document.getElementById('btnRegister').textContent = '🚀 Começar Teste Gratuito';
     }
-
-    verificarAcesso();
 }
 
-function recadastrar() {
+async function recadastrar() {
+    // Apenas limpa o localStorage local — NÃO apaga dados do Firebase
     localStorage.removeItem(REGISTER_KEY);
     clearInterval(timerInterval);
-    clearInterval(authCheckInterval);
+    if (adminUserListener) { adminUserListener(); adminUserListener = null; }
+
+    // Oculta tudo
     document.getElementById('blockedOverlay').classList.add('hidden');
     document.getElementById('waitingOverlay').classList.add('hidden');
     document.getElementById('appMain').classList.add('hidden');
     document.getElementById('userInfoBar').classList.add('hidden');
     document.getElementById('timerBar').classList.add('hidden');
+
+    // Limpa formulário de cadastro
     document.getElementById('regNome').value = '';
     document.getElementById('regIdade').value = '';
     document.getElementById('regTelefone').value = '';
@@ -676,66 +861,91 @@ function recadastrar() {
     document.getElementById('aceitoTermos').checked = false;
     document.getElementById('photoPreview').style.display = 'none';
     document.getElementById('photoPlaceholder').style.display = 'block';
+    document.getElementById('btnRegister').disabled = false;
+    document.getElementById('btnRegister').textContent = '🚀 Começar Teste Gratuito';
+
     document.getElementById('registerOverlay').classList.remove('hidden');
 }
 
-/**
- * LÓGICA CENTRAL DE ACESSO:
- * - pago=true OU status='liberado' → acesso permanente, sem timer
- * - status='bloqueado' → bloqueado
- * - status='aguardando' e dentro do prazo → trial com timer
- * - expirou → bloqueado
- */
-function verificarAcesso() {
-    const regUser = getCurrentRegUser();
-    if (!regUser) {
-        mostrarCadastro(); return;
-    }
+async function verificarAcesso() {
+    const userId = getCurrentRegUserId();
 
-    // Sincroniza com admin (pode ter sido liberado/bloqueado pelo monitor)
-    const adminUsers = getAdminUsers();
-    const adminUser = adminUsers.find(u => u.id === regUser.id || u.email === regUser.email);
-
-    let statusAtual = regUser.status;
-    let pago = regUser.pago;
-    let expiraEm = regUser.expiraEm;
-
-    if (adminUser) {
-        statusAtual = adminUser.status;
-        pago = adminUser.pago;
-        expiraEm = adminUser.expiraEm;
-        // Atualiza o registro local com os dados mais recentes do admin
-        const atualizado = { ...regUser, status: statusAtual, pago, expiraEm };
-        localStorage.setItem(REGISTER_KEY, JSON.stringify(atualizado));
-    }
-
-    // LIBERADO PERMANENTE
-    if (pago || statusAtual === 'liberado') {
-        mostrarApp(regUser, false);
+    // Sem ID salvo → mostra cadastro
+    if (!userId) {
+        mostrarCadastro();
         return;
     }
 
-    // BLOQUEADO
-    if (statusAtual === 'bloqueado') {
-        mostrarBloqueado(); return;
-    }
+    try {
+        const adminUser = await fbBuscarAdminUserPorId(userId);
 
-    // TRIAL — verifica expiração
-    const agora = Date.now();
-    if (agora > expiraEm) {
-        // Atualiza status para bloqueado no admin também
-        if (adminUser) {
-            adminUser.status = 'bloqueado';
-            saveAdminUsers(adminUsers);
+        // ID não encontrado no Firebase → mostra cadastro
+        if (!adminUser) {
+            mostrarCadastro();
+            return;
         }
-        mostrarBloqueado(); return;
-    }
 
-    // Trial ativo
-    mostrarApp(regUser, true, expiraEm);
+        const { status, pago, expiraEm } = adminUser;
+
+        // ── LIBERADO PELO ADMIN OU PAGO ──
+        // Entra direto no app, sem timer, sem tela de cadastro
+        if (estaLiberado(adminUser)) {
+            mostrarApp(adminUser, false, null);
+            escutarMudancasUsuario(adminUser.id);
+            return;
+        }
+
+        // ── BLOQUEADO MANUALMENTE PELO ADMIN ──
+        if (status === 'bloqueado') {
+            mostrarBloqueado();
+            return;
+        }
+
+        // ── TRIAL: verifica se ainda está no prazo ──
+        const agora = Date.now();
+        if (agora > expiraEm) {
+            // Trial expirou → marca como bloqueado no Firebase e mostra tela bloqueada
+            await db.ref('adminUsers/' + sanitizeKey(adminUser.id)).update({ status: 'bloqueado' });
+            mostrarBloqueado();
+            return;
+        }
+
+        // ── TRIAL ATIVO (status 'aguardando' dentro do prazo) ──
+        mostrarApp(adminUser, true, expiraEm);
+        escutarMudancasUsuario(adminUser.id);
+
+    } catch(e) {
+        console.error('Erro ao verificar acesso:', e);
+        mostrarCadastro();
+    }
+}
+
+// Escuta mudanças em tempo real no Firebase
+// Se o admin liberar o usuário enquanto ele está na tela de espera/trial,
+// o app abre automaticamente sem precisar recarregar a página.
+function escutarMudancasUsuario(userId) {
+    if (adminUserListener) { adminUserListener(); adminUserListener = null; }
+    const ref = db.ref('adminUsers/' + sanitizeKey(userId));
+    const callback = ref.on('value', (snap) => {
+        if (!snap.exists()) return;
+        const adminUser = snap.val();
+
+        if (estaLiberado(adminUser)) {
+            // Admin liberou → remove timer, mantém no app com acesso permanente
+            clearInterval(timerInterval);
+            document.getElementById('timerBar').classList.add('hidden');
+            mostrarApp(adminUser, false, null);
+        } else if (adminUser.status === 'bloqueado') {
+            mostrarBloqueado();
+        } else if (Date.now() > adminUser.expiraEm) {
+            mostrarBloqueado();
+        }
+    });
+    adminUserListener = () => ref.off('value', callback);
 }
 
 function mostrarCadastro() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
     document.getElementById('registerOverlay').classList.remove('hidden');
     document.getElementById('blockedOverlay').classList.add('hidden');
     document.getElementById('waitingOverlay').classList.add('hidden');
@@ -744,13 +954,14 @@ function mostrarCadastro() {
     document.getElementById('timerBar').classList.add('hidden');
 }
 
-function mostrarApp(regUser, showTimer, expiraEm) {
+function mostrarApp(adminUser, showTimer, expiraEm) {
+    document.getElementById('loadingOverlay').classList.add('hidden');
     document.getElementById('registerOverlay').classList.add('hidden');
     document.getElementById('blockedOverlay').classList.add('hidden');
     document.getElementById('waitingOverlay').classList.add('hidden');
     document.getElementById('appMain').classList.remove('hidden');
-    mostrarBarraUsuario(regUser, showTimer);
-    iniciarApp(regUser);
+    mostrarBarraUsuario(adminUser, showTimer);
+    iniciarApp(adminUser);
     if (showTimer && expiraEm) {
         iniciarTimer(expiraEm);
     } else {
@@ -761,6 +972,7 @@ function mostrarApp(regUser, showTimer, expiraEm) {
 
 function mostrarBloqueado() {
     clearInterval(timerInterval);
+    document.getElementById('loadingOverlay').classList.add('hidden');
     document.getElementById('registerOverlay').classList.add('hidden');
     document.getElementById('waitingOverlay').classList.add('hidden');
     document.getElementById('appMain').classList.add('hidden');
@@ -769,14 +981,14 @@ function mostrarBloqueado() {
     document.getElementById('blockedOverlay').classList.remove('hidden');
 }
 
-function mostrarBarraUsuario(regUser, showTimer) {
+function mostrarBarraUsuario(adminUser, showTimer) {
     const bar = document.getElementById('userInfoBar');
     bar.classList.remove('hidden');
-    document.getElementById('infoNome').textContent = regUser.nome;
+    document.getElementById('infoNome').textContent = adminUser.nome;
     const fotoEl = document.getElementById('infoFoto');
-    if (regUser.foto) { fotoEl.src = regUser.foto; fotoEl.style.display = 'block'; }
+    if (adminUser.foto) { fotoEl.src = adminUser.foto; fotoEl.style.display = 'block'; }
     else { fotoEl.style.display = 'none'; }
-    if (regUser.pago || regUser.status === 'liberado') {
+    if (estaLiberado(adminUser)) {
         document.getElementById('infoStatus').textContent = '✅ Plano Ativo — Acesso Permanente';
         document.getElementById('infoStatus').className = 'user-status status-pago';
     } else {
@@ -802,36 +1014,11 @@ function iniciarTimer(expiraEm) {
     timerInterval = setInterval(atualizar, 1000);
 }
 
-// Verificação periódica — detecta mudanças feitas no monitor
-function iniciarVerificacaoPeriodica() {
-    clearInterval(authCheckInterval);
-    authCheckInterval = setInterval(() => {
-        const regUser = getCurrentRegUser();
-        if (!regUser) return;
-        const adminUsers = getAdminUsers();
-        const adminUser = adminUsers.find(u => u.id === regUser.id || u.email === regUser.email);
-        if (!adminUser) return;
-        const statusMudou = adminUser.status !== regUser.status || adminUser.pago !== regUser.pago;
-        if (statusMudou) {
-            // Recarrega acesso com novo status
-            verificarAcesso();
-        }
-    }, 5000);
-}
-
-// Escuta mudanças de localStorage de outras abas (monitor na mesma máquina)
-window.addEventListener('storage', function(e) {
-    if (e.key === ADMIN_USERS_KEY || e.key === '_adminUpdate') {
-        verificarAcesso();
-    }
-});
-
-function iniciarApp(regUser) {
-    document.getElementById('nome').value = regUser.nome;
-    document.getElementById('idade').value = regUser.idade || '';
-    mostrarLista();
+async function iniciarApp(adminUser) {
+    document.getElementById('nome').value = adminUser.nome;
+    document.getElementById('idade').value = adminUser.idade || '';
+    await mostrarLista();
     document.getElementById('controleSection').classList.remove('hidden');
-    iniciarVerificacaoPeriodica();
 }
 
 // ============================
@@ -880,7 +1067,8 @@ function resetAnalisarButton() {
     const ab = document.getElementById("analisarButton");
     ab.textContent = "Analisar peso ideal"; ab.classList.remove("active");
 }
-function saveUserCadastro() {
+
+async function saveUserCadastro() {
     const nome = document.getElementById("nome").value.trim();
     if (!nome) return;
     const userCadastro = {
@@ -893,14 +1081,16 @@ function saveUserCadastro() {
         tipoDieta: document.getElementById("tipoDieta").value || "Exata",
         exercicio: document.getElementById("exercicio").value || "0"
     };
-    try { localStorage.setItem(`${USER_PREFIX}${nome}`, JSON.stringify(userCadastro)); } catch(e) {}
+    try { await fbSalvarUsuario(nome, userCadastro); } catch(e) { console.error(e); }
     resetAnalisarButton();
-    mostrarLista(nome);
+    await mostrarLista(nome);
 }
-function loadUserCadastro(nome) {
+
+async function loadUserCadastro(nome) {
     if (!nome) return;
     try {
-        const u = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
+        const u = await fbBuscarUsuario(nome);
+        if (!u) return;
         document.getElementById("nome").value = u.nome || "";
         document.getElementById("idade").value = u.idade || "";
         document.getElementById("genero").value = u.genero || "Feminino";
@@ -910,41 +1100,42 @@ function loadUserCadastro(nome) {
         document.getElementById("duracaoDieta").value = u.duracaoDieta || "6";
         document.getElementById("tipoDieta").value = u.tipoDieta || "Exata";
         document.getElementById("exercicio").value = u.exercicio || "0";
-    } catch(e) {}
+    } catch(e) { console.error(e); }
     analisar();
     document.getElementById("toggleCadastroButton").textContent = "Fechar Análise";
     document.getElementById("analisarButton").textContent = "Análise Atualizada";
     document.getElementById("analisarButton").classList.add("active");
 }
-function mostrarLista(nomeParaSelecionar = '') {
+
+async function mostrarLista(nomeParaSelecionar = '') {
     const tabelaBody = document.querySelector("#tabelaNutri tbody");
-    tabelaBody.innerHTML = '';
-    const users = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(USER_PREFIX)) {
-            try { users.push(JSON.parse(localStorage.getItem(key))); } catch(e) {}
-        }
-    }
-    users.sort((a,b) => a.nome.localeCompare(b.nome));
-    users.forEach(user => {
-        const tr = document.createElement("tr");
-        const { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta } = calcularResultados(user);
-        const dataFim = calcularDataFim(user.dataInicio, user.duracaoDieta);
-        tr.innerHTML = `<td>${user.nome}</td><td>${user.idade}</td><td>${user.genero}</td><td>${user.altura}</td><td>${user.peso}</td><td>${imc.toFixed(2)}</td><td>${pesoIdeal.toFixed(2)}</td><td>${kgEmagrecer.toFixed(2)}</td><td>${calDia.toFixed(0)}</td><td>${calMes.toFixed(0)}</td><td>${calTotalDieta.toFixed(0)}</td><td>${getDuracaoText(user.duracaoDieta)}</td><td>${user.tipoDieta}</td><td>${user.exercicio=="1"?"Sim":"Não"}</td><td>${formatDateToBR(user.dataInicio)}</td><td>${formatDateToBR(dataFim)}</td>`;
-        tr.onclick = () => { loadUserCadastro(user.nome); window.scrollTo(0,0); };
-        tabelaBody.appendChild(tr);
-    });
-    const userSelect = document.getElementById("userSelect");
-    userSelect.innerHTML = '<option value="">Selecione um usuário</option>';
-    users.forEach(user => {
-        const option = document.createElement("option");
-        option.value = user.nome; option.textContent = user.nome;
-        userSelect.appendChild(option);
-        if (user.nome === nomeParaSelecionar) userSelect.value = nomeParaSelecionar;
-    });
-    document.getElementById("listaSection").classList.remove("hidden");
+    tabelaBody.innerHTML = '<tr><td colspan="16" style="text-align:center;color:#aaa">Carregando...</td></tr>';
+    try {
+        const users = await fbListarUsuarios();
+        allUsersCache = {};
+        users.forEach(u => { allUsersCache[u.nome] = u; });
+        users.sort((a,b) => a.nome.localeCompare(b.nome));
+        tabelaBody.innerHTML = '';
+        users.forEach(user => {
+            const tr = document.createElement("tr");
+            const { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta } = calcularResultados(user);
+            const dataFim = calcularDataFim(user.dataInicio, user.duracaoDieta);
+            tr.innerHTML = `<td>${user.nome}</td><td>${user.idade}</td><td>${user.genero}</td><td>${user.altura}</td><td>${user.peso}</td><td>${imc.toFixed(2)}</td><td>${pesoIdeal.toFixed(2)}</td><td>${kgEmagrecer.toFixed(2)}</td><td>${calDia.toFixed(0)}</td><td>${calMes.toFixed(0)}</td><td>${calTotalDieta.toFixed(0)}</td><td>${getDuracaoText(user.duracaoDieta)}</td><td>${user.tipoDieta}</td><td>${user.exercicio=="1"?"Sim":"Não"}</td><td>${formatDateToBR(user.dataInicio)}</td><td>${formatDateToBR(dataFim)}</td>`;
+            tr.onclick = () => { loadUserCadastro(user.nome); window.scrollTo(0,0); };
+            tabelaBody.appendChild(tr);
+        });
+        const userSelect = document.getElementById("userSelect");
+        userSelect.innerHTML = '<option value="">Selecione um usuário</option>';
+        users.forEach(user => {
+            const option = document.createElement("option");
+            option.value = user.nome; option.textContent = user.nome;
+            userSelect.appendChild(option);
+            if (user.nome === nomeParaSelecionar) userSelect.value = nomeParaSelecionar;
+        });
+        document.getElementById("listaSection").classList.remove("hidden");
+    } catch(e) { console.error(e); tabelaBody.innerHTML = '<tr><td colspan="16" style="color:red">Erro ao carregar usuários.</td></tr>'; }
 }
+
 function calcularResultados(user) {
     const { idade, genero, altura, peso, duracaoDieta, tipoDieta, exercicio } = user;
     const alturaM = Number(altura) / 100;
@@ -969,7 +1160,8 @@ function calcularResultados(user) {
     if (calDiaBase < 1000) calDiaBase = 1000;
     return { imc, pesoIdeal, kgEmagrecer, calDia: calDiaBase, calMes: calDiaBase*DIAS_NO_MES, calTotalDieta: calDiaBase*duracaoMeses*DIAS_NO_MES };
 }
-function analisar() {
+
+async function analisar() {
     const nome = document.getElementById("nome").value.trim();
     const idade = document.getElementById("idade").value;
     const altura = document.getElementById("altura").value;
@@ -979,7 +1171,7 @@ function analisar() {
     const user = { nome, idade, genero: document.getElementById("genero").value, altura, peso, dataInicio, duracaoDieta: document.getElementById("duracaoDieta").value, tipoDieta: document.getElementById("tipoDieta").value, exercicio: document.getElementById("exercicio").value };
     const { imc, pesoIdeal, kgEmagrecer, calDia, calMes, calTotalDieta } = calcularResultados(user);
     const dataFim = calcularDataFim(dataInicio, user.duracaoDieta);
-    const { consumedMes, consumedDieta } = getConsumedTotals(nome, user);
+    const { consumedMes, consumedDieta } = await fbGetConsumedTotals(nome, user);
     document.getElementById("resNome").textContent = nome;
     document.getElementById("resGenero").textContent = user.genero;
     document.getElementById("resPeso").textContent = Number(peso).toFixed(1);
@@ -1000,33 +1192,36 @@ function analisar() {
     document.getElementById("controleSection").classList.remove("hidden");
     document.getElementById("analisarButton").textContent = "Análise Atualizada";
     document.getElementById("analisarButton").classList.add("active");
-    saveUserCadastro();
+    await saveUserCadastro();
     carregarUsuarioControle(nome, calDia);
 }
-function salvarNutri() {
+
+async function salvarNutri() {
     alert("Informações de " + document.getElementById("resNome").textContent + " salvas com sucesso!");
     document.getElementById("analisarButton").textContent = "Analisar peso ideal";
     document.getElementById("analisarButton").classList.remove("active");
-    mostrarLista(document.getElementById("resNome").textContent);
+    await mostrarLista(document.getElementById("resNome").textContent);
 }
-function carregarUsuario() {
+
+async function carregarUsuario() {
     const nome = document.getElementById("userSelect").value;
     if (!nome) { alert("Selecione um usuário."); return; }
     try {
-        const u = JSON.parse(localStorage.getItem(`${USER_PREFIX}${nome}`) || "{}");
-        if (!u.nome) throw new Error();
+        const u = await fbBuscarUsuario(nome);
+        if (!u || !u.nome) throw new Error();
         const { calDia } = calcularResultados(u);
         carregarUsuarioControle(nome, calDia);
     } catch(e) { alert("Erro ao carregar dados do usuário."); }
 }
-function carregarUsuarioControle(nome, calDia) {
+
+async function carregarUsuarioControle(nome, calDia) {
     currentUser = nome;
     document.getElementById("loadUserButton").textContent = `Usuário: ${nome}`;
     document.getElementById("loadUserButton").classList.add("active");
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("consumptionDate").value = today;
     document.getElementById("caloriesLimit").value = calDia.toFixed(0);
-    carregarConsumoDoDia();
+    await carregarConsumoDoDia();
     if (document.getElementById("categorySelect").options.length <= 1) {
         const categories = [...new Set(foods.map(f => f.category))].sort();
         const cs = document.getElementById("categorySelect");
@@ -1034,25 +1229,27 @@ function carregarUsuarioControle(nome, calDia) {
     }
     gerarTabelaAlimentos();
 }
-function carregarConsumoDoDia() {
+
+async function carregarConsumoDoDia() {
     if (!currentUser) return;
     const date = document.getElementById("consumptionDate").value;
     if (!date) { dailyConsumption = {}; updateDailyTotal(); return; }
-    try { dailyConsumption = JSON.parse(localStorage.getItem(`${DAILY_CONSUMPTION_PREFIX}${currentUser}_${date}`) || "{}"); } catch(e) { dailyConsumption = {}; }
-    gerarTabelaAlimentos(); updateDailyTotal();
+    try {
+        dailyConsumption = await fbCarregarConsumo(currentUser, date);
+    } catch(e) { dailyConsumption = {}; }
+    gerarTabelaAlimentos();
+    await updateDailyTotal();
 }
-function saveConsumoDoDia() {
+
+async function saveConsumoDoDia() {
     if (!currentUser) return;
     const date = document.getElementById("consumptionDate").value;
     if (!date) return;
-    const key = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${date}`;
-    const toSave = {};
-    for (const [food, qty] of Object.entries(dailyConsumption)) { if (qty > 0) toSave[food] = qty; }
-    if (Object.keys(toSave).length > 0) localStorage.setItem(key, JSON.stringify(toSave));
-    else localStorage.removeItem(key);
-    updateDailyTotal();
+    try { await fbSalvarConsumo(currentUser, date, dailyConsumption); } catch(e) { console.error(e); }
+    await updateDailyTotal();
 }
-function updateQuantity(foodName, delta) {
+
+async function updateQuantity(foodName, delta) {
     const cur = dailyConsumption[foodName] || 0;
     let nv = cur + delta;
     if (nv < 0) nv = 0;
@@ -1060,9 +1257,10 @@ function updateQuantity(foodName, delta) {
     const inputId = `qty_${foodName.replace(/[^a-zA-Z0-9]/g,'')}`;
     const el = document.getElementById(inputId);
     if (el) el.value = nv;
-    saveConsumoDoDia();
+    await saveConsumoDoDia();
     gerarTabelaAlimentos();
 }
+
 function gerarTabelaAlimentos() {
     const category = document.getElementById("categorySelect").value;
     const tabelaBody = document.getElementById("foodTableBody");
@@ -1082,34 +1280,15 @@ function gerarTabelaAlimentos() {
         tabelaBody.appendChild(tr);
     });
 }
-function manualUpdateQuantity(foodName, value) {
+
+async function manualUpdateQuantity(foodName, value) {
     const nv = Number(value);
     dailyConsumption[foodName] = (isNaN(nv)||nv<0) ? 0 : nv;
-    saveConsumoDoDia(); gerarTabelaAlimentos();
+    await saveConsumoDoDia();
+    gerarTabelaAlimentos();
 }
-function getConsumedTotals(nome, user) {
-    let consumedDieta = 0, consumedMes = 0;
-    const today = new Date().toISOString().split('T')[0];
-    const prefix = `${DAILY_CONSUMPTION_PREFIX}${nome}_`;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(prefix)) {
-            try {
-                const consumption = JSON.parse(localStorage.getItem(key));
-                let dailyTotal = 0;
-                for (const [foodName, qty] of Object.entries(consumption)) {
-                    const food = allFoodsMap.get(foodName);
-                    if (food) dailyTotal += food.cal * qty;
-                }
-                consumedDieta += dailyTotal;
-                const dateStr = key.substring(prefix.length);
-                if (today.substring(0,7) === dateStr.substring(0,7)) consumedMes += dailyTotal;
-            } catch(e) {}
-        }
-    }
-    return { consumedMes, consumedDieta };
-}
-function updateDailyTotal() {
+
+async function updateDailyTotal() {
     if (!currentUser) return;
     let totalCalories = 0;
     for (const [fn, qty] of Object.entries(dailyConsumption)) {
@@ -1117,21 +1296,18 @@ function updateDailyTotal() {
         if (food) totalCalories += food.cal * qty;
     }
     document.getElementById("totalCalories").textContent = totalCalories.toFixed(0);
-    const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${currentUser}`) || "{}");
-    const { calMes, calTotalDieta } = calcularResultados(userCadastro);
-    const { consumedMes, consumedDieta } = getConsumedTotals(currentUser, userCadastro);
-    const currentDayKey = `${DAILY_CONSUMPTION_PREFIX}${currentUser}_${document.getElementById("consumptionDate").value}`;
-    const savedToday = JSON.parse(localStorage.getItem(currentDayKey) || "{}");
-    let savedTotalToday = 0;
-    for (const [fn, qty] of Object.entries(savedToday)) {
-        const food = allFoodsMap.get(fn);
-        if (food) savedTotalToday += food.cal * qty;
-    }
-    document.getElementById("remainingCalories").textContent = (calMes - (consumedMes - savedTotalToday + totalCalories)).toFixed(0);
-    document.getElementById("remainingTotalDieta").textContent = (calTotalDieta - (consumedDieta - savedTotalToday + totalCalories)).toFixed(0);
-    const calLimit = Number(document.getElementById("caloriesLimit").value);
-    if (totalCalories > calLimit && !speaking) falarAlerta(currentUser);
+    try {
+        const userCadastro = allUsersCache[currentUser] || await fbBuscarUsuario(currentUser);
+        if (!userCadastro) return;
+        const { calMes, calTotalDieta } = calcularResultados(userCadastro);
+        const { consumedMes, consumedDieta } = await fbGetConsumedTotals(currentUser, userCadastro);
+        document.getElementById("remainingCalories").textContent = (calMes - consumedMes).toFixed(0);
+        document.getElementById("remainingTotalDieta").textContent = (calTotalDieta - consumedDieta).toFixed(0);
+        const calLimit = Number(document.getElementById("caloriesLimit").value);
+        if (totalCalories > calLimit && !speaking) falarAlerta(currentUser);
+    } catch(e) { console.error(e); }
 }
+
 function falarAlerta(nomeUsuario) {
     if ('speechSynthesis' in window) {
         speaking = true;
@@ -1141,12 +1317,13 @@ function falarAlerta(nomeUsuario) {
         window.speechSynthesis.speak(utterance);
     }
 }
+
 function generateDailyReport() {
     if (!currentUser) { alert("Selecione um usuário primeiro."); return; }
     const date = document.getElementById("consumptionDate").value;
     if (!date) { alert("Selecione uma data."); return; }
-    const userCadastro = JSON.parse(localStorage.getItem(`${USER_PREFIX}${currentUser}`) || "{}");
-    const { calDia } = calcularResultados(userCadastro);
+    const userCadastro = allUsersCache[currentUser];
+    const calDia = userCadastro ? calcularResultados(userCadastro).calDia : 0;
     const consumedItems = [];
     let totalCalories = 0;
     for (const [fn, qty] of Object.entries(dailyConsumption)) {
@@ -1162,6 +1339,7 @@ function generateDailyReport() {
     a.href = url; a.download = `Relatorio_${currentUser}_${date}.html`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
+
 function abrirAnalise(fechar) {
     const cs = document.getElementById("cadastroSection");
     const rs = document.getElementById("resultadoSection");
@@ -1177,15 +1355,15 @@ function abrirAnalise(fechar) {
         ctrl.classList.add("hidden"); ls.classList.add("hidden");
         tb.textContent = "Fechar Análise"; tb.onclick = () => abrirAnalise(true);
         const ni = document.getElementById("nome");
-        if (ni.value.trim() && localStorage.getItem(`${USER_PREFIX}${ni.value.trim()}`)) loadUserCadastro(ni.value.trim());
+        if (ni.value.trim()) loadUserCadastro(ni.value.trim());
     }
 }
 
 // ============================
 // INICIALIZAÇÃO
 // ============================
-window.onload = function() {
-    verificarAcesso();
+window.onload = async function() {
+    await verificarAcesso();
 };
 </script>
 </body>
